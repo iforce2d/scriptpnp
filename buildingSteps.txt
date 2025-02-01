@@ -1,0 +1,117 @@
+
+Install packages for Fedora
+---------------------------
+
+sudo dnf install cmake autogen libtool glfw-devel glew-devel libusb1-devel sqlite-devel libjpeg-devel zlib-devel
+
+
+Install packages for Ubuntu
+---------------------------
+
+sudo apt install cmake autogen libtool pkg-config libglfw3-dev libglew-dev libusb-1.0-0-dev libsqlite3-dev libjpeg-dev libz-dev libgtk-3-dev
+
+
+Install packages for OSX
+------------------------
+brew install autoconf automake libtool (probably more that I already had and didn't know about...)
+
+
+Build steps for Fedora and Ubuntu are shown below
+For OSX, probably need to change /usr prefixes to /usr/local, and do "export nproc=4" first to limit concurrent compilations.
+----------------------
+
+cd pnpClient
+
+git clone https://github.com/ocornut/imgui.git
+git clone https://github.com/epezent/implot.git
+
+git clone https://github.com/assimp/assimp.git
+cd assimp
+cmake --install-prefix=/usr
+make -j$(nproc)
+sudo make install
+cd ..
+
+git clone https://github.com/libuvc/libuvc.git
+cd libuvc
+cmake --install-prefix=/usr
+make -j$(nproc)
+sudo make install
+cd ..
+
+git clone https://github.com/zeromq/libzmq.git
+cd libzmq
+./autogen.sh
+./configure --prefix=/usr
+make -j$(nproc)
+sudo make install
+cd ..
+
+mkdir angelscript
+cd angelscript
+wget https://www.angelcode.com/angelscript/sdk/files/angelscript_2.37.0.zip
+unzip angelscript_2.37.0.zip
+cd sdk/angelscript/projects/cmake
+cmake --install-prefix=/usr
+make -j$(nproc)
+sudo make install
+cd ../../../../..
+
+git clone https://github.com/zxing-cpp/zxing-cpp.git --recursive --single-branch --depth 1
+cd zxing-cpp
+mkdir build
+cd build
+cmake --install-prefix=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=false ..
+make -j$(nproc)
+sudo make install
+cd ../..
+
+git clone https://github.com/mlabbe/nativefiledialog.git
+cd nativefiledialog/build/gmake_linux
+make
+cd ../../..
+
+sudo apt install libserialport-dev
+
+cd run
+cmake ../src          # for OSX: cmake -DCMAKE_CXX_COMPILER=g++ ../src
+make -j$(nproc)
+./pnpClient
+
+
+
+----------------------------
+
+To open camera as non-root user, this works on Fedora 36:
+1. Create the file /etc/udev/rules.d/10-libuvc.rules and put this in it (replace 046d with your camera's vendor):
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="046d", MODE="0666"
+2. sudo udevadm control --reload-rules
+Unplug the camera and plug it in again.
+
+On Fedora 40, the file might need to be in /usr/lib/udev/rules.d
+
+
+
+--- When connecting to the server over wifi
+The default behavior of Raspbian is to scan for new wifi access points roughly every minute. Apparently this is done by switching to different frequencies temporarily, which causes disruption to connections on the existing access point. For most applications this is not a big deal, but for an application that should be real-time responsive it sucks. If you notics that jogging the machine feels stuttery over wifi occasionally this could be the reason. Another tell-tale sign is the "Server connection" time jumping up to 100ms or more.
+This periodic scanning can be disabled by editing ~/.config/lxpanel/LXDE-pi/panels/panel and adding a BgScan=0 in the dhcpcdui section.
+
+Before:
+
+Plugin {
+  type=dhcpcdui
+  Config {
+  }
+}
+
+After:
+
+Plugin {
+  type=dhcpcdui
+  Config {
+    BgScan=0
+  }
+}
+
+
+

@@ -1,0 +1,6 @@
+#ifndef SCRIPT_USBCAMERA_H
+#define SCRIPT_USBCAMERA_H
+
+
+
+#endif // SCRIPT_USBCAMERA_H

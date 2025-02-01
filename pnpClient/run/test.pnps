@@ -1,0 +1,32 @@
+//d -1
+sml v250
+srl v6000 a40000 j80000
+//d 1
+d1 t0.5 5 -2
+pwm a0.25 t1.75 b0.15
+pwm a0 t2.2 b0.14
+//sr b45 t4
+r a180 t0.5  b45
+//m x0
+sync
+
+r a90 t1
+m x100 y200
+m y50z0
+sync
+
+w 2
+r b0 t4
+r a-180
+m z-12
+sync
+
+m z0
+w 2
+r a90
+sync
+
+r a0
+m x50y0z-11.5
+d -1
+
