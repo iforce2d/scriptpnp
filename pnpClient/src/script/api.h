@@ -146,15 +146,19 @@ public:
     script_vec3 operator +=(const script_vec3& other);
     script_vec3 operator -=(const script_vec3& other);
 
+    script_vec3() {x = y = z = 0;}
+    script_vec3(float _x, float _y, float _z) { x = _x; y = _y; z = _z; }
+
+    script_vec3& operator=(const script_vec3 &other);
     script_vec3 set_floatfloatfloat(float _x, float _y, float _z);
     float length();
     float normalize();
     script_vec3 normalized();
     float distTo(const script_vec3 other);
+    float distToXY(const script_vec3 other);
     script_vec3 rotatedBy(float degrees);
 };
 
-;
 
 void vec3_opAdd_vec3(asIScriptGeneric * gen);
 void vec3_opSub_vec3(asIScriptGeneric * gen);
@@ -230,6 +234,8 @@ int script_getProbingResult();
 void script_print_bool(bool b);
 void script_print_int(int i);
 void script_print_float(float f);
+std::string script_str_float(float f);
+std::string script_str_vec3(script_vec3 &v);
 void script_print_vec3(script_vec3 &v);
 void script_print_serialReply(script_serialReply &r);
 

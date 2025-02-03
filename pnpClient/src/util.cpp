@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <math.h>
 
 using namespace std;
 
@@ -29,3 +30,19 @@ string joinStringVec(vector<string>& v, string delimiter)
     str = str.substr(0, str.size() - delimiter.size());
     return str;
 }
+
+int getExponentStringLength(float d) {
+    d = fabs(d);
+    if (d < 1)
+        return 0;
+
+    return (int)log10(d) + 1;
+}
+
+std::string fformat(float d, int precision)
+{
+    char buf[64];
+    sprintf(buf, "%.*g", getExponentStringLength(d) + precision, d);
+    return string(buf);
+}
+

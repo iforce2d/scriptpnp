@@ -66,7 +66,8 @@ void discardCompiledFunction(compiledScript_t &compiled);
 bool currentlyRunningScriptThread();
 bool checkScriptRunThreadComplete();
 
-bool currentlyPausingScriptThread();
+bool currentlyPausingScript();
+
 void pauseScript();
 bool resumeScript();
 void abortScript();

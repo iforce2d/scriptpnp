@@ -11,6 +11,7 @@
 #include "db.h"
 #include "preview.h"
 #include "run.h"
+#include "util.h"
 #include "script/api.h"
 
 using namespace std;
@@ -162,12 +163,12 @@ void afterRunScript()
 static bool isRunningScriptThread = false;
 std::chrono::steady_clock::time_point scriptStartTime = {};
 
-void setIsRunningScript(bool b) {
+void setIsRunningScriptThread(bool b) {
     g_log.log(LL_DEBUG, "setIsRunningScript %d", b);
     isRunningScriptThread = b;
 }
 
-bool getIsRunningScript() {
+bool getIsRunningScriptThread() {
     return isRunningScriptThread;
 }
 
@@ -209,11 +210,13 @@ bool runScript(string moduleName, string funcName, bool previewOnly, void *codeE
             if ( ! scriptEditorWindows.empty() )
                 w = scriptEditorWindows[0];
         }
-        if ( w && ! getIsRunningScript() )
+        if ( w && ! getIsRunningScriptThread() )
             w->log.log(LL_INFO, NULL, timeTaken, "%s", scriptPrintBuffer.c_str());
     }
 
-    discardScriptModule(compiled.mod);
+    // only discard the module if it's not still running in separate thread!
+    if ( previewOnly )
+        discardScriptModule(compiled.mod);
 
     return true;
 }
@@ -293,44 +296,58 @@ bool compileScript(string moduleName, string funcName, compiledScript_t &compile
 }
 
 pthread_t scriptRunThread;
-bool isScriptRunThreadComplete = false;
+bool didScriptRunJustComplete = false; // true if the script ran all the way to the end
 
 // this includes the state where a script is paused
 bool currentlyRunningScriptThread() {
-    return getIsRunningScript();
+    return getIsRunningScriptThread();
 }
+
+struct scriptRunThreadInfo {
+    asIScriptContext* ctx;
+    asIScriptModule* mod;
+};
+
+// need to keep this in scope, used for resume as well as initial startup
+scriptRunThreadInfo scriptThreadStartupInfo;
 
 void* scriptRunThreadFunc(void* ptr)
 {
-    asIScriptContext *ctx = (asIScriptContext*)ptr;
+    UNUSED( ptr ); // obtain from global variable above
+    //scriptRunThreadInfo* info = (scriptRunThreadInfo*)ptr;
+    //asIScriptContext *ctx = info->ctx;
+    //asIScriptModule* mod = info->mod;
 
-    bool stillRunning = executeScriptContext(ctx);
+    bool stillRunning = executeScriptContext( scriptThreadStartupInfo.ctx );
 
     std::chrono::steady_clock::time_point t1 =   std::chrono::steady_clock::now();
     long long timeTaken = std::chrono::duration_cast<std::chrono::microseconds>(t1 - scriptStartTime).count();
     g_log.log(LL_INFO, "Script%s run took %lld us", stillRunning?" (partial)":"", timeTaken);
 
-    isScriptRunThreadComplete = ! stillRunning;
+    if ( ! stillRunning )
+        discardScriptModule( scriptThreadStartupInfo.mod );
+
+    didScriptRunJustComplete = ! stillRunning;
 
     return (void*)1;
 }
 
 bool checkScriptRunThreadComplete()
 {
-    if ( isScriptRunThreadComplete ) {
+    if ( didScriptRunJustComplete ) {
         void* ok = 0;
         pthread_join(scriptRunThread, &ok);
 
-        isScriptRunThreadComplete = false;
+        didScriptRunJustComplete = false;
 
         setActivePreviewOnly(false);
         setActiveScriptLog(NULL);
 
         //this_thread::sleep_for( 2000ms );
 
-        g_log.log(LL_DEBUG, "finished script");
+        setIsRunningScriptThread( false );
 
-        setIsRunningScript( false );
+        g_log.log(LL_DEBUG, "finished script");
 
         return true;
     }
@@ -359,12 +376,15 @@ bool runCompiledFunction(compiledScript_t &compiled, bool previewOnly, void *cod
     bool runThreaded = ! previewOnly;
     if ( runThreaded ) {
 
-        asIScriptContext* ctx = createScriptContext(compiled.func);
+        //asIScriptContext* ctx = createScriptContext(compiled.func);
 
-        isScriptRunThreadComplete = false;
-        setIsRunningScript( ! previewOnly );
+        didScriptRunJustComplete = false;
+        setIsRunningScriptThread( true );
 
-        int ret = pthread_create(&scriptRunThread, NULL, scriptRunThreadFunc, ctx);
+        scriptThreadStartupInfo.ctx = createScriptContext(compiled.func);
+        scriptThreadStartupInfo.mod = compiled.mod;
+
+        int ret = pthread_create(&scriptRunThread, NULL, scriptRunThreadFunc, &scriptThreadStartupInfo);
         if ( ret ) {
             g_log.log(LL_FATAL, "Script run thread creation failed!");
             return false;
@@ -418,12 +438,7 @@ void discardCompiledFunction(compiledScript_t &compiled)
 }
 
 
-bool isScriptPaused = false;
 
-bool currentlyPausingScriptThread()
-{
-    return isScriptPaused;
-}
 
 void pauseScript()
 {
@@ -434,7 +449,7 @@ void pauseScript()
             g_log.log(LL_DEBUG, "pauseScript");
 
             ctx->Suspend();
-            isScriptPaused = true;
+            //isScriptPaused = true; let executeScriptContext do this, because the script may take a while to actually respond
 
             std::chrono::steady_clock::time_point t1 =   std::chrono::steady_clock::now();
             long long timeTaken = std::chrono::duration_cast<std::chrono::microseconds>(t1 - scriptStartTime).count();
@@ -447,7 +462,7 @@ void pauseScript()
 
 bool resumeScript()
 {
-    if ( isScriptPaused ) {
+    if ( currentlyPausingScript() ) {
         asIScriptContext *ctx = getCurrentScriptContext();
         if ( ctx ) {
 
@@ -455,13 +470,13 @@ bool resumeScript()
 
             scriptStartTime = std::chrono::steady_clock::now();
 
-            int ret = pthread_create(&scriptRunThread, NULL, scriptRunThreadFunc, ctx);
+            int ret = pthread_create(&scriptRunThread, NULL, scriptRunThreadFunc, &scriptThreadStartupInfo);
             if ( ret ) {
                 g_log.log(LL_FATAL, "Script run thread creation failed!");
                 return false;
             }
 
-            isScriptPaused = false;
+            //isScriptPaused = false;
         }
     }
 
@@ -474,16 +489,28 @@ void abortScript()
 {
     if ( currentlyRunningScriptThread() ) {
         asIScriptContext *ctx = getCurrentScriptContext();
-        if ( ctx ) {
 
-            g_log.log(LL_DEBUG, "abortScript");
+        if ( currentlyPausingScript() ) {
+            g_log.log(LL_DEBUG, "abortScript during pause");
 
-            isScriptPaused = false;
-            setIsRunningScript( false );
+            setIsScriptPaused( false );
+            setIsRunningScriptThread( false );
 
             ctx->Abort();
+            cleanupScriptContext(ctx);
+            discardScriptModule( scriptThreadStartupInfo.mod );
+        }
+        else {
+            if ( ctx ) {
 
-            //cleanupScriptContext(ctx);  don't do any cleanup here, let executeScriptContext do it
+                g_log.log(LL_DEBUG, "abortScript during run");
+
+                //setIsRunningScriptThread( false );
+
+                ctx->Abort();
+
+                //cleanupScriptContext(ctx);  don't do any cleanup here, let executeScriptContext do it
+            }
         }
     }
 }

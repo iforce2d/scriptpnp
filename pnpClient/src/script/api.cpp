@@ -20,6 +20,7 @@
 #include "run.h"
 #include "net_requester.h"
 #include "overrides.h"
+#include "util.h"
 
 #ifndef DEGTORAD
 #define DEGTORAD 0.01745329252
@@ -925,15 +926,31 @@ void script_print_int(int i)
 void script_print_float(float f)
 {
     ScriptLog* log = (ScriptLog*)getActiveScriptLog();
-    if ( log )
-        log->log(LL_INFO, NULL, 0, "%.6f", f);
+    if ( log ) {
+        string s = fformat(f, 8);
+        log->log(LL_INFO, NULL, 0, "%s", s.c_str());
+    }
+}
+
+string script_str_float(float f)
+{
+    return fformat(f, 8);
+}
+
+string script_str_vec3(script_vec3 &v)
+{
+    return fformat(v.x, 8) + ", " + fformat(v.y, 8) + ", " + fformat(v.z, 8);
 }
 
 void script_print_vec3(script_vec3 &v)
 {
     ScriptLog* log = (ScriptLog*)getActiveScriptLog();
-    if ( log )
-        log->log(LL_INFO, NULL, 0, "%.6f, %.6f, %.6f", v.x, v.y, v.z);
+    if ( log ) {
+        string x = fformat(v.x, 8);
+        string y = fformat(v.y, 8);
+        string z = fformat(v.z, 8);
+        log->log(LL_INFO, NULL, 0, "%s", script_str_vec3(v).c_str());
+    }
 }
 
 void script_print_serialReply(script_serialReply &r)
@@ -1083,6 +1100,13 @@ void vec3_opNeg(asIScriptGeneric * gen) {
     gen->SetReturnObject(self);
 }
 
+script_vec3 &script_vec3::operator=(const script_vec3 &other)
+{
+    x = other.z;
+    y = other.y;
+    z = other.z;
+    return *this;
+}
 
 script_vec3 script_vec3::set_floatfloatfloat(float _x, float _y, float _z) {
     x = _x;
@@ -1137,6 +1161,12 @@ float script_vec3::distTo(const script_vec3 other) {
     float dy = y - other.y;
     float dz = z - other.z;
     return sqrtf(dx*dx + dy*dy + dz*dz);
+}
+
+float script_vec3::distToXY(const script_vec3 other) {
+    float dx = x - other.x;
+    float dy = y - other.y;
+    return sqrtf(dx*dx + dy*dy);
 }
 
 script_vec3 script_vec3::rotatedBy(float degrees)

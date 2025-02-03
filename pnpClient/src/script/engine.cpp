@@ -85,6 +85,18 @@ bool getActivePreviewOnly() {
 
 
 
+void vec3_defaultConstructor(void *self)
+{
+    new(self) script_vec3();
+}
+
+void vec3_initConstructor(float x, float y, float z, script_vec3 *self)
+{
+    new(self) script_vec3(x,y,z);
+}
+
+
+
 bool setupScriptEngine()
 {
     //g_log.log(LL_TRACE, "setupScriptEngine");
@@ -439,14 +451,20 @@ bool setupScriptEngine()
     r = engine->RegisterGlobalFunction("float getWeight()", asFUNCTION(script_getWeight), asCALL_CDECL);
     assert( r >= 0 );
 
-    r = engine->RegisterObjectType("vec3", sizeof(script_vec3), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS | asOBJ_APP_CLASS_ALLFLOATS );
+    r = engine->RegisterObjectType("vec3", sizeof(script_vec3), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS | asOBJ_APP_CLASS_ALLFLOATS  );
+    //r = engine->RegisterObjectType("vec3", sizeof(script_vec3), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_CA | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<script_vec3>() );
     assert( r >= 0 );
     r = engine->RegisterObjectProperty("vec3", "float x", offsetof(script_vec3,x));
     assert( r >= 0 );
     r = engine->RegisterObjectProperty("vec3", "float y", offsetof(script_vec3,y));
     assert( r >= 0 );
     r = engine->RegisterObjectProperty("vec3", "float z", offsetof(script_vec3,z));
+    assert( r >= 0 );    
+    r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(vec3_defaultConstructor), asCALL_CDECL_OBJLAST);
     assert( r >= 0 );
+    r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f(float x, float y = 0, float z = 0)", asFUNCTION(vec3_initConstructor), asCALL_CDECL_OBJLAST);
+    assert( r >= 0 );
+
     r = engine->RegisterObjectMethod("vec3", "vec3 opAdd(const vec3 &in) const", asFUNCTION(vec3_opAdd_vec3), asCALL_GENERIC);
     assert( r >= 0 );
     r = engine->RegisterObjectMethod("vec3", "vec3 opSub(const vec3 &in) const", asFUNCTION(vec3_opSub_vec3), asCALL_GENERIC);
@@ -465,7 +483,7 @@ bool setupScriptEngine()
     assert( r >= 0 );
     r = engine->RegisterObjectMethod("vec3", "vec3 opNeg() const", asFUNCTION(vec3_opNeg), asCALL_GENERIC);
     assert( r >= 0 );
-    r = engine->RegisterObjectMethod("vec3", "vec3 set(float x, float y, float z)", asMETHOD(script_vec3,set_floatfloatfloat), asCALL_THISCALL);
+    r = engine->RegisterObjectMethod("vec3", "vec3 set(float x = 0, float y = 0, float z = 0)", asMETHOD(script_vec3,set_floatfloatfloat), asCALL_THISCALL);
     assert( r >= 0 );
     r = engine->RegisterObjectMethod("vec3", "float length()", asMETHOD(script_vec3,length), asCALL_THISCALL);
     assert( r >= 0 );
@@ -475,8 +493,13 @@ bool setupScriptEngine()
     assert( r >= 0 );
     r = engine->RegisterObjectMethod("vec3", "float distanceTo(vec3 other)", asMETHOD(script_vec3,distTo), asCALL_THISCALL);
     assert( r >= 0 );
+    r = engine->RegisterObjectMethod("vec3", "float distanceToXY(vec3 other)", asMETHOD(script_vec3,distToXY), asCALL_THISCALL);
+    assert( r >= 0 );
     r = engine->RegisterObjectMethod("vec3", "vec3 rotatedBy(float angleDegrees)", asMETHOD(script_vec3,rotatedBy), asCALL_THISCALL);
     assert( r >= 0 );
+
+
+
 
     r = engine->RegisterGlobalFunction("vec3 getActualPos()", asFUNCTION(script_getActualPos), asCALL_CDECL);
     assert( r >= 0 );
@@ -488,6 +511,11 @@ bool setupScriptEngine()
     r = engine->RegisterGlobalFunction("void print(int)", asFUNCTION(script_print_int), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void print(float)", asFUNCTION(script_print_float), asCALL_CDECL);
+    assert( r >= 0 );
+
+    r = engine->RegisterGlobalFunction("string str(float)", asFUNCTION(script_str_float), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("string str(vec3 &in)", asFUNCTION(script_str_vec3), asCALL_CDECL);
     assert( r >= 0 );
 
     r = engine->RegisterGlobalFunction("void print(vec3 &in)", asFUNCTION(script_print_vec3), asCALL_CDECL);
@@ -594,6 +622,8 @@ asIScriptModule* createScriptModule(string moduleName)
 
 void discardScriptModule(asIScriptModule * mod)
 {
+    g_log.log(LL_ERROR, "discardScriptModule");
+
     if ( ! mod ) {
         g_log.log(LL_ERROR, "discardScriptModule failed: module is null");
         return;
@@ -697,10 +727,23 @@ asIScriptContext *createScriptContext(asIScriptFunction *func)
     return ctx;
 }
 
+bool isScriptPaused = false;
+
+void setIsScriptPaused(bool tf) {
+    isScriptPaused = tf;
+}
+
+bool currentlyPausingScript()
+{
+    return isScriptPaused;
+}
+
 // return true if still running (ie. suspended and can be resumed)
 bool executeScriptContext(asIScriptContext *ctx)
 {
     currentScriptContext = ctx;
+
+    isScriptPaused = false;
 
     int r = ctx->Execute();
 
@@ -709,23 +752,25 @@ bool executeScriptContext(asIScriptContext *ctx)
         if ( r == asEXECUTION_EXCEPTION ) {
             g_log.log(LL_ERROR, "Exception occurred while executing script: %s", ctx->GetExceptionString());
             currentScriptContext = NULL;
-            ctx->Release();
+            cleanupScriptContext(ctx);
             return false;
         }
         else if ( r == asEXECUTION_ABORTED ) {
             g_log.log(LL_INFO, "Aborted while executing script");
             currentScriptContext = NULL;
-            ctx->Release();
+            cleanupScriptContext(ctx);
             return false;
         }
         else if ( r == asEXECUTION_SUSPENDED ) {
             g_log.log(LL_INFO, "Suspended while executing script");
-            return true;
+            isScriptPaused = true;
+            // leave context as is !
+            return true; // still running
         }
         return false;
     }
 
-    cleanupScriptContext(ctx);
+    //cleanupScriptContext(ctx);
 
     return false;
 }
@@ -737,6 +782,8 @@ asIScriptContext *getCurrentScriptContext()
 
 void cleanupScriptContext(asIScriptContext* ctx)
 {
+    g_log.log(LL_ERROR, "cleanupScriptContext");
+
     if ( ctx )
         ctx->Release();
     currentScriptContext = NULL;

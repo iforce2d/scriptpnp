@@ -772,6 +772,21 @@ void showPlotsView(bool* p_open) {
 }
 
 
+ImFont* tryLoadFont(const char* fontFile, float size) {
+    FILE* f = fopen(fontFile, "r");
+    if ( f ) {
+        fclose( f );
+
+        ImGuiIO& io = ImGui::GetIO();
+        ImFont* fontPtr = io.Fonts->AddFontFromFileTTF( fontFile, size );
+        ImGui::MergeIconsWithLatestFont(size, false);
+        return fontPtr;
+    }
+    g_log.log(LL_ERROR, "Could not load font file: %s", fontFile);
+    return NULL;
+}
+
+
 // to be used in separate thread
 int modelsLoaded = 0;
 int modelsExpected = 6;
@@ -909,14 +924,12 @@ int main(int, char**)
     ImGui::StyleColorsDark();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.Fonts->AddFontFromFileTTF("fonts/FreeSans.ttf", 18.0f);
-    ImGui::MergeIconsWithLatestFont(18.f, false);
-    font_proggy = io.Fonts->AddFontFromFileTTF("fonts/ProggyVector-Regular.ttf", 18.0f);
-    ImGui::MergeIconsWithLatestFont(18.f, false);
-    font_sourceCodePro = io.Fonts->AddFontFromFileTTF("fonts/SourceCodePro-Regular.ttf", 18.0f);
-    ImGui::MergeIconsWithLatestFont(18.f, false);
-    font_ubuntuMono = io.Fonts->AddFontFromFileTTF("fonts/UbuntuMono-Regular.ttf", 18.0f);
-    ImGui::MergeIconsWithLatestFont(18.f, false);
+
+    tryLoadFont( "fonts/FreeSans.ttf", 16.0f );
+
+    font_proggy =        tryLoadFont( "fonts/ProggyVector-Regular.ttf", 18.0f );
+    font_sourceCodePro = tryLoadFont( "fonts/SourceCodePro-Regular.ttf", 18.0f );
+    font_ubuntuMono =    tryLoadFont( "fonts/UbuntuMono-Regular.ttf", 18.0f);
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowRounding = 4;
@@ -1448,7 +1461,7 @@ int main(int, char**)
 
         if ( closeAttempted ) {
             closeAttempted = false;
-            if ( currentlyRunningScriptThread() || currentlyPausingScriptThread() ) {
+            if ( currentlyRunningScriptThread() || currentlyPausingScript() ) {
                 ImGuiToast toast(ImGuiToastType_Warning, 4000);
                 toast.set_title("Ignoring app close attempt because script run is in progress");
                 //toast.set_content("Lorem ipsum dolor sit amet");
@@ -1898,7 +1911,7 @@ int main(int, char**)
                 }
 
                 bool didDisable = false;
-                if ( currentlyRunningScriptThread() || currentlyPausingScriptThread() ) {
+                if ( currentlyRunningScriptThread() || currentlyPausingScript() ) {
                     ImGui::BeginDisabled();
                     didDisable = true;
                 }
@@ -1942,7 +1955,7 @@ int main(int, char**)
 
 
                 didDisable = false;
-                if ( ! currentlyRunningScriptThread() || currentlyPausingScriptThread() ) {
+                if ( ! currentlyRunningScriptThread() || currentlyPausingScript() ) {
                     ImGui::BeginDisabled();
                     didDisable = true;
                 }
@@ -1956,7 +1969,7 @@ int main(int, char**)
                 ImGui::SameLine();
 
                 didDisable = false;
-                if ( ! currentlyPausingScriptThread() ) {
+                if ( ! currentlyPausingScript() ) {
                     ImGui::BeginDisabled();
                     didDisable = true;
                 }

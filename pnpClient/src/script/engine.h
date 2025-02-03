@@ -34,4 +34,7 @@ asIScriptContext* getCurrentScriptContext();
 void cleanupScriptContext(asIScriptContext* ctx);
 bool executeScriptContext(asIScriptContext *ctx);
 
+void setIsScriptPaused(bool tf);
+bool currentlyPausingScript();
+
 #endif // SCRIPTENGINE_H
