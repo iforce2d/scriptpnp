@@ -2,13 +2,13 @@
 Install packages for Fedora
 ---------------------------
 
-sudo dnf install cmake autogen libtool glfw-devel glew-devel libusb1-devel sqlite-devel libjpeg-devel zlib-devel
+sudo dnf install cmake autogen libtool glfw-devel glew-devel libusb1-devel sqlite-devel libjpeg-devel zlib-devel libserialport-devel
 
 
 Install packages for Ubuntu
 ---------------------------
 
-sudo apt install cmake autogen libtool pkg-config libglfw3-dev libglew-dev libusb-1.0-0-dev libsqlite3-dev libjpeg-dev libz-dev libgtk-3-dev
+sudo apt install cmake autogen libtool pkg-config libglfw3-dev libglew-dev libusb-1.0-0-dev libsqlite3-dev libjpeg-dev libz-dev libgtk-3-dev libserialport-dev
 
 
 Install packages for OSX
@@ -71,7 +71,6 @@ cd nativefiledialog/build/gmake_linux
 make
 cd ../../..
 
-sudo apt install libserialport-dev
 
 cd run
 cmake ../src          # for OSX: cmake -DCMAKE_CXX_COMPILER=g++ ../src
