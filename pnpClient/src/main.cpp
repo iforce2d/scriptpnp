@@ -6,7 +6,11 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl2.h"
 #include "imgui_notify/imgui_notify.h"
+#include <sqlite3.h>
+#include <assimp/version.h>
 #include <stdio.h>
+#include <zmq.h>
+#include <ZXing/Version.h>
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
@@ -886,7 +890,19 @@ int main(int, char**)
 {
     g_log.log(LL_INFO, "Starting pnpClient");
 
-    g_log.log(LL_INFO, "Angelscript %s", ANGELSCRIPT_VERSION_STRING);
+    int major, minor, patch;
+
+    g_log.log(LL_INFO, "Versions:");
+    g_log.log(LL_INFO, "   glfw %s", glfwGetVersionString());
+    g_log.log(LL_INFO, "   Dear Imgui %s", IMGUI_VERSION);
+    g_log.log(LL_INFO, "   SQLite %s", sqlite3_libversion());
+    zmq_version(&major, &minor, &patch);
+    g_log.log(LL_INFO, "   ZeroMQ %d.%d.%d", major, minor, patch);
+    g_log.log(LL_INFO, "   AngelScript %s", ANGELSCRIPT_VERSION_STRING);
+    g_log.log(LL_INFO, "   libuvc %d.%d.%d", LIBUVC_VERSION_MAJOR, LIBUVC_VERSION_MINOR, LIBUVC_VERSION_PATCH);
+    g_log.log(LL_INFO, "   libAssimp %d.%d.%d", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch());
+    g_log.log(LL_INFO, "   libserialport %s", sp_get_package_version_string());
+    g_log.log(LL_INFO, "   ZXing %s", ZXING_VERSION_STR);
 
     serverHostname[0] = 0;
 
