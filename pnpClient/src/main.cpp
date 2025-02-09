@@ -27,6 +27,8 @@
 #include <chrono>
 #include "implot.h"
 #include "scv/planner.h"
+
+#include "version.h"
 #include "camera.h"
 
 #include "pnpMessages.h"
@@ -888,7 +890,7 @@ pthread_t mainThreadId;
 
 int main(int, char**)
 {
-    g_log.log(LL_INFO, "Starting pnpClient");
+    g_log.log(LL_INFO, "ScriptPNP client v%d.%d.%d", SCRIPTPNP_CLIENT_VERSION_MAJOR, SCRIPTPNP_CLIENT_VERSION_MINOR, SCRIPTPNP_CLIENT_VERSION_PATCH);
 
     int major, minor, patch;
 
