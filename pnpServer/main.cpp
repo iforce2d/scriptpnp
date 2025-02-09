@@ -15,6 +15,7 @@
 #include "RTThread.h"
 #include "interThread.h"
 
+#include "version.h"
 #include "server.h"
 #include "../common/commandlist.h"
 #include "log.h"
@@ -895,6 +896,8 @@ void backupConfig() {
 motionStatus mStatus = {0};
 
 int main() {
+
+    g_log.log(LL_INFO, "ScriptPNP server v%d.%d.%d", SCRIPTPNP_SERVER_VERSION_MAJOR, SCRIPTPNP_SERVER_VERSION_MINOR, SCRIPTPNP_SERVER_VERSION_PATCH);
 
     g_log.log(LL_DEBUG, "clientReport_t: %d bytes", sizeof(clientReport_t));
     g_log.log(LL_DEBUG, "commandRequest_t: %d bytes", sizeof(commandRequest_t));
