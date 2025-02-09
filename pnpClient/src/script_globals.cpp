@@ -3,6 +3,7 @@
 
 #include "script_globals.h"
 #include "db.h"
+#include "script/engine.h"
 
 using namespace std;
 
@@ -11,6 +12,9 @@ map<string, string> globalStringMap;
 
 void script_setMemoryValue(string name, float v)
 {
+    if ( getActivePreviewOnly() )
+        return;
+
     globalValuesMap[name] = v;
 }
 
@@ -31,6 +35,9 @@ bool script_haveMemoryValue(string name)
 
 void script_setMemoryString(string name, string s)
 {
+    if ( getActivePreviewOnly() )
+        return;
+
     globalStringMap[name] = s;
 }
 
@@ -75,6 +82,9 @@ static int globalValue_callback(void *NotUsed, int argc, char **argv, char **azC
 
 void script_setDBString(string name, string val)
 {
+    if ( getActivePreviewOnly() )
+        return;
+
     string errMsg;
     string sql;
 
@@ -121,6 +131,9 @@ bool script_haveDBString(string name)
 
 void script_setDBValue(string name, float val)
 {
+    if ( getActivePreviewOnly() )
+        return;
+
     string errMsg;
     string sql;
 

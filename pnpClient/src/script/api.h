@@ -111,20 +111,12 @@ public:
     float angle;
 };
 
-class script_qrcode {
-public:
-    //script_rotatedRect outline;
-    int numPoints;
-    int outlinePoints[8];
-    char value[34];
-    std::string getValue() { return value; }
-};
-
 class script_renderText {
 public:
     std::string text;
     int x;
     int y;
+    float fontSize;
     int r;
     int g;
     int b;
@@ -171,6 +163,18 @@ void vec3_opMulAssign_float(asIScriptGeneric * gen);
 void vec3_opDivAssign_float(asIScriptGeneric * gen);
 
 void vec3_opNeg(asIScriptGeneric * gen);
+
+
+class script_qrcode {
+public:
+    //script_rotatedRect outline;
+    int numPoints;
+    int outlinePoints[8];
+    char value[34];
+    std::string getValue() { return value; }
+    script_vec3 getCenter();
+};
+
 
 class script_serialReply {
     int refCount;

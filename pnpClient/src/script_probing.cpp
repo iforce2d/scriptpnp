@@ -1,6 +1,7 @@
 #include "net_requester.h"
 #include "net_subscriber.h"
 #include "script_probing.h"
+#include "script/engine.h"
 
 int script_PT_DIGITAL = PT_DIGITAL;
 int script_PT_LOADCELL = PT_LOADCELL;
@@ -25,6 +26,9 @@ float script_getProbedHeight() {
 
 void script_probe(float depth, int type, float minForce)
 {
+    if ( getActivePreviewOnly() )
+        return;
+
     commandRequest_t req = createCommandRequest(MT_PROBE);
     req.probe.type = type;
     req.probe.z = depth;

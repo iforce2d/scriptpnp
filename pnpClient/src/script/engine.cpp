@@ -22,6 +22,7 @@
 #include "usbcamera.h"
 #include "tableView.h"
 #include "notify.h"
+#include "util.h"
 
 #include "workspace.h"
 #include "script_probing.h"
@@ -96,6 +97,8 @@ void vec3_initConstructor(float x, float y, float z, script_vec3 *self)
 }
 
 
+float script_DEGTORAD = DEGTORAD;
+float script_RADTODEG = RADTODEG;
 
 bool setupScriptEngine()
 {
@@ -168,6 +171,11 @@ bool setupScriptEngine()
     r = engine->RegisterGlobalProperty("const int VP_GRN", &script_VP_GRN);
     assert( r >= 0 );
     r = engine->RegisterGlobalProperty("const int VP_BLU", &script_VP_BLU);
+    assert( r >= 0 );
+
+    r = engine->RegisterGlobalProperty("const float DEGTORAD", &script_DEGTORAD);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalProperty("const float RADTODEG", &script_RADTODEG);
     assert( r >= 0 );
 
 
@@ -325,13 +333,6 @@ bool setupScriptEngine()
     assert( r >= 0 );
     r = engine->RegisterObjectProperty("rect", "float angle", offsetof(script_rotatedRect,angle));
     assert( r >= 0 );
-
-    r = engine->RegisterObjectType("qrcode", sizeof(script_qrcode), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS );
-    assert( r >= 0 );
-    r = engine->RegisterObjectMethod("qrcode", "string getValue()", asMETHOD(script_qrcode,getValue), asCALL_THISCALL);
-    assert( r >= 0 );
-    // r = engine->RegisterObjectProperty("qrcode", "rect outline", offsetof(script_qrcode,outline));
-    // assert( r >= 0 );
 
     r = engine->RegisterGlobalFunction("int getUSBCameraIndexByHash(string fragment)", asFUNCTION(script_getUSBCameraIndexByHash), asCALL_CDECL);
     assert( r >= 0 );
@@ -568,12 +569,19 @@ bool setupScriptEngine()
     assert( r >= 0 );
 
 
-    r = engine->RegisterGlobalFunction("qrcode[]@ findQRCodes(int howMany = 1)", asFUNCTION(script_findQRCodes), asCALL_CDECL);
+    r = engine->RegisterObjectType("qrcode", sizeof(script_qrcode), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS );
     assert( r >= 0 );
-    r = engine->RegisterGlobalFunction("void drawQRCode(qrcode &in c)", asFUNCTION(script_drawQRCode), asCALL_CDECL);
+    r = engine->RegisterObjectMethod("qrcode", "string getValue()", asMETHOD(script_qrcode,getValue), asCALL_THISCALL);
+    assert( r >= 0 );
+    r = engine->RegisterObjectMethod("qrcode", "vec3 getCenter()", asMETHOD(script_qrcode,getCenter), asCALL_THISCALL);
     assert( r >= 0 );
 
-    r = engine->RegisterGlobalFunction("void drawText(string msg, float x, float y)", asFUNCTION(script_drawText), asCALL_CDECL);
+    r = engine->RegisterGlobalFunction("qrcode[]@ findQRCodes(int howMany = 1)", asFUNCTION(script_findQRCodes), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("void drawQRCode(qrcode &in c, float fontSize = 20)", asFUNCTION(script_drawQRCode), asCALL_CDECL);
+    assert( r >= 0 );
+
+    r = engine->RegisterGlobalFunction("void drawText(string msg, float x, float y, float fontSize = 20)", asFUNCTION(script_drawText), asCALL_CDECL);
     assert( r >= 0 );
 
 
@@ -875,6 +883,7 @@ void generateScriptDocs()
     scopes.push_back("blob");
     scopes.push_back("rect");
     scopes.push_back("serialReply");
+    scopes.push_back("qrcode");
 
     vector<string> ignoredDecls;
 
@@ -898,19 +907,16 @@ void generateScriptDocs()
 
     std::ifstream ifs;
     ifs.open(stringsFile, std::ios::in);
-    if (!ifs) {
-        g_log.log(LL_ERROR, "Could not open file '%s' for reading.", stringsFile.c_str());
-        return;
-    }
-
-    Json::Reader reader;
-    if ( ! reader.parse(ifs, helpStringsValue) )
-    {
+    if ( ifs ) {
+        Json::Reader reader;
+        if ( ! reader.parse(ifs, helpStringsValue) )
+        {
+            ifs.close();
+            g_log.log(LL_ERROR, "Failed to parse JSON from file '%s' : %s", stringsFile.c_str(), reader.getFormatedErrorMessages().c_str() );
+            return;
+        }
         ifs.close();
-        g_log.log(LL_ERROR, "Failed to parse JSON from file '%s' : %s", stringsFile.c_str(), reader.getFormatedErrorMessages().c_str() );
-        return;
     }
-    ifs.close();
 
     for (string scope : scopes) {
         // printf("\n//--------------------\n");

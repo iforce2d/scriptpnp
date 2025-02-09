@@ -23,6 +23,7 @@ bool loadTextFromDBFile(std::string &text, std::string dbFileType, std::string p
 int getAllPathsOfTypeFromDBFile(std::vector<std::string> &paths, std::string dbFileType, std::string &errMsg);
 int loadAllTextOfTypeFromDBFile(std::vector<dbTextFileInfo> &entries, std::string dbFileType, std::vector<std::string> &excludePaths, std::string &errMsg);
 
+int getLastInsertId();
 int getNextUntitledPathOfTypeFromDB(std::string dbFileType, std::string &errMsg);
 
 #endif // DB_H

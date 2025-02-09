@@ -94,6 +94,7 @@ add_executable(pnpClient
     notify.cpp
     script_probing.h script_probing.cpp
     feedback.h feedback.cpp
+    version.h
 )
 
 add_compile_definitions(CLIENT)

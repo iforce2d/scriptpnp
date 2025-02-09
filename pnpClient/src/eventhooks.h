@@ -11,10 +11,12 @@
 
 struct functionKeyHookInfo_t {
     int id;
+    bool dirty;
     char entryFunction[MAX_ENTRY_FUNCTION_LEN];
     bool preview;
     functionKeyHookInfo_t() {
         id = 0;
+        dirty = true;
         entryFunction[0] = 0;
         preview = true;
     }
@@ -22,11 +24,13 @@ struct functionKeyHookInfo_t {
 
 struct customButtonHookInfo_t {
     int id;
+    bool dirty;
     char label[MAX_CUSTOM_BUTTON_LABEL_LEN];
     char entryFunction[MAX_ENTRY_FUNCTION_LEN];
     bool preview;
     customButtonHookInfo_t() {
         id = 0;
+        dirty = true;
         label[0] = 0;
         entryFunction[0] = 0;
         preview = true;
@@ -35,12 +39,14 @@ struct customButtonHookInfo_t {
 
 struct tweakInfo_t {
     int id;
+    bool dirty;
     char name[MAX_TWEAK_LABEL_LEN];
     float floatval;
     float minval;
     float maxval;
     tweakInfo_t() {
         id = 0;
+        dirty = true;
         name[0] = 0;
         floatval = 0;
         minval = 0;
@@ -51,10 +57,14 @@ struct tweakInfo_t {
 void saveEventHooksToDB();
 void loadEventHooksFromDB();
 
-void showHooksView(bool* p_open);
+void saveTweakToDB(std::string name);
+
+void showHooksView(bool* p_open, float dt);
 void executeFunctionKeyHook(int index);
 std::vector<customButtonHookInfo_t> & getCustomButtonInfos();
 std::vector<tweakInfo_t> & getTweakInfos();
 tweakInfo_t *getTweakByName(std::string name);
+void deleteTweak( int id );
+void deleteCustomButton( int id );
 
 #endif // EVENTHOOKS_H

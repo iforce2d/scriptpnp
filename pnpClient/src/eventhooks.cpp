@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <algorithm>
 
 #include "imgui.h"
 #include "eventhooks.h"
@@ -25,6 +26,10 @@ void saveEventHooksToDB()
 
     for (int i = 0; i < NUM_FUNCTION_KEY_HOOKS; i++) {
         functionKeyHookInfo_t &info = functionKeyHookInfos[i];
+
+        if ( ! info.dirty )
+            continue;
+
         char label[32];
         sprintf(label, "F%d", i+1);
 
@@ -39,22 +44,52 @@ void saveEventHooksToDB()
     for (int i = 0; i < numRows; i++) {
         customButtonHookInfo_t &info = customButtonHookInfos[i];
 
+        if ( ! info.dirty )
+            continue;
+
         string idStr = info.id == 0 ? "NULL" : to_string(info.id);
 
-        string sql = "insert into internal_eventhook (id, type, label, entryfunction, preview) values ("+idStr+",'button','"+string(info.label)+"','"+ info.entryFunction +"',"+to_string(info.preview)+")"
-            + " on CONFLICT do UPDATE set label = '"+ info.label +"', entryfunction = '"+ info.entryFunction +"', preview = "+to_string(info.preview);
-        executeDatabaseStatement(sql, NULL, errMsg);
+        string errMsg;
+        vector< vector<string> > tmp;
+        executeDatabaseStatement_generic("select id from internal_eventhook where id = "+to_string(info.id), &tmp, errMsg);
+        if ( ! tmp.empty() ) {
+            string sql = "UPDATE internal_eventhook SET label = '"+ string(info.label) +"', entryfunction = '"+ info.entryFunction +"', preview = "+to_string(info.preview)+" where id = "+to_string(info.id);
+            if ( executeDatabaseStatement(sql, NULL, errMsg) )
+                info.dirty = false;
+        }
+        else {
+            string sql = "INSERT INTO internal_eventhook (type, label, entryfunction, preview) values ('button','"+string(info.label)+"','"+ info.entryFunction +"',"+to_string(info.preview)+")";
+            if ( executeDatabaseStatement(sql, NULL, errMsg) ) {
+                info.id = getLastInsertId();
+                info.dirty = false;
+            }
+        }
     }
 
     numRows = (int)tweakInfos.size();
     for (int i = 0; i < numRows; i++) {
         tweakInfo_t &info = tweakInfos[i];
 
+        if ( ! info.dirty )
+            continue;
+
         string idStr = info.id == 0 ? "NULL" : to_string(info.id);
 
-        string sql = "insert into internal_tweak (id, name, minval, maxval, floatval) values ("+idStr+",'"+string(info.name)+"',"+ to_string(info.minval) +","+to_string(info.maxval) +","+to_string(info.floatval)+")"
-            + " on CONFLICT do UPDATE set name = '"+ string(info.name) +"', minval = "+to_string(info.minval) +", maxval = "+to_string(info.maxval) +", floatval = "+to_string(info.floatval);
-        executeDatabaseStatement(sql, NULL, errMsg);
+        string errMsg;
+        vector< vector<string> > tmp;
+        executeDatabaseStatement_generic("SELECT id FROM internal_tweak WHERE id = "+to_string(info.id), &tmp, errMsg);
+        if ( ! tmp.empty() ) {
+            string sql = "UPDATE internal_tweak SET name = '"+ string(info.name) +"', minval = "+to_string(info.minval) +", maxval = "+to_string(info.maxval) +", floatval = "+to_string(info.floatval)+" where id = "+to_string(info.id);
+            if ( executeDatabaseStatement(sql, NULL, errMsg) )
+                info.dirty = false;
+        }
+        else {
+            string sql = "INSERT INTO internal_tweak (name, minval, maxval, floatval) VALUES ('"+string(info.name)+"',"+ to_string(info.minval) +","+to_string(info.maxval) +","+to_string(info.floatval)+")";
+            if ( executeDatabaseStatement(sql, NULL, errMsg) ) {
+                info.id = getLastInsertId();
+                info.dirty = false;
+            }
+        }
     }
 
     executeDatabaseStatement("COMMIT", NULL, errMsg);
@@ -92,9 +127,11 @@ void loadEventHooksFromDB()
                 vector<string> &cols = loadEventHooksResult[r];
                 info.id = atoi(cols[0].c_str());
                 snprintf(info.entryFunction, sizeof(info.entryFunction), "%s", cols[1].c_str());
+                info.dirty = false;
                 info.preview = atoi(cols[2].c_str());
             }
         }
+
     }
 
     loadEventHooksResult.clear();
@@ -109,6 +146,7 @@ void loadEventHooksFromDB()
             snprintf(info.label, sizeof(info.label), "%s", cols[1].c_str());
             snprintf(info.entryFunction, sizeof(info.entryFunction), "%s", cols[2].c_str());
             info.preview = atoi(cols[3].c_str());
+            info.dirty = false;
             customButtonHookInfos.push_back(info);
         }
     }
@@ -126,16 +164,21 @@ void loadEventHooksFromDB()
             info.minval = atof(cols[2].c_str());
             info.maxval = atof(cols[3].c_str());
             info.floatval = atof(cols[4].c_str());
+            info.dirty = false;
             tweakInfos.push_back(info);
         }
-
     }
 
     loadEventHooksResult.clear();
 }
 
-void showFunctionKeyHooks()
+#define EHST_TIMEOUT 5
+float eventHooksNeedSaveTimer = 0;
+
+bool showFunctionKeyHooks()
 {
+    bool somethingChanged = false;
+
     char buf[32];
 
     if (ImGui::BeginTable("fnKeyHooksTable", 3, ImGuiTableFlags_SizingFixedFit))
@@ -169,11 +212,19 @@ void showFunctionKeyHooks()
         }
         ImGui::EndTable();
     }
+
+    return somethingChanged;
 }
 
-void showCustomButtonHooks()
+bool showCustomButtonHooks()
 {
+    bool somethingChanged = false;
+
     char buf[64];
+
+    static bool addedButtonLastFrame = false;
+
+    static int buttonIdToDelete = 0;
 
     int numRows = (int)customButtonHookInfos.size();
     if (ImGui::BeginTable("customButtonHooksTable", 3, ImGuiTableFlags_SizingFixedFit))
@@ -187,6 +238,8 @@ void showCustomButtonHooks()
 
         for (int i = 0; i < numRows; i++) {
 
+            bool wasChanged = false;
+
             customButtonHookInfo_t &info = customButtonHookInfos[i];
 
             ImGui::TableNextRow();
@@ -194,16 +247,49 @@ void showCustomButtonHooks()
             ImGui::TableSetColumnIndex(0);
             ImGui::PushItemWidth(160);
             sprintf(buf, "##btnlabel%d", i);
+
+            if ( addedButtonLastFrame && (i == numRows-1) ) {
+                ImGui::SetKeyboardFocusHere();
+                addedButtonLastFrame = false;
+            }
+
             ImGui::InputText(buf, info.label, MAX_CUSTOM_BUTTON_LABEL_LEN-1);
+
+            if ( ImGui::IsItemEdited() )
+                wasChanged = true;
 
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(160);
             sprintf(buf, "##btnfn%d", i);
             ImGui::InputText(buf, info.entryFunction, MAX_ENTRY_FUNCTION_LEN-1, ImGuiInputTextFlags_CharsNoBlank);
 
+            if ( ImGui::IsItemEdited() )
+                wasChanged = true;
+
             ImGui::TableSetColumnIndex(2);
             sprintf(buf, "Preview##btnpv%d", i);
             ImGui::Checkbox(buf, &info.preview);
+
+            if ( ImGui::IsItemEdited() )
+                wasChanged = true;
+
+
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+            ImGui::SameLine();
+            sprintf(buf, "Delete##%d", i);
+            if ( ImGui::Button(buf) ) {
+                buttonIdToDelete = info.id;
+            }
+            ImGui::PopStyleColor(3);
+
+
+
+            if ( wasChanged ) {
+                info.dirty = true;
+                somethingChanged = true;
+            }
         }
         ImGui::EndTable();
     }
@@ -211,12 +297,27 @@ void showCustomButtonHooks()
     if ( ImGui::Button("Add button") ) {
         customButtonHookInfo_t info;
         customButtonHookInfos.push_back(info);
+        somethingChanged = true;
+        addedButtonLastFrame = true;
     }
+
+    if ( buttonIdToDelete > 0 ) {
+        deleteCustomButton( buttonIdToDelete );
+        buttonIdToDelete = 0;
+    }
+
+    return somethingChanged;
 }
 
-void showTweakHooks()
+bool showTweakHooks()
 {
+    bool somethingChanged = false;
+
     char buf[64];
+
+    static bool addedButtonLastFrame = false;
+
+    int tweakIdToDelete = 0;
 
     int numRows = (int)tweakInfos.size();
     if (ImGui::BeginTable("tweaksTable", 3, ImGuiTableFlags_SizingFixedFit))
@@ -230,7 +331,12 @@ void showTweakHooks()
         ImGui::TableSetColumnIndex(2);
         ImGui::Text("Max");
 
+        vector<string> namesInUse;
+
+
         for (int i = 0; i < numRows; i++) {
+
+            bool wasChanged = false;
 
             tweakInfo_t &info = tweakInfos[i];
 
@@ -239,22 +345,73 @@ void showTweakHooks()
             ImGui::TableSetColumnIndex(0);
             ImGui::PushItemWidth(160);
             sprintf(buf, "##tweakname%d", i);
+
+            bool duplicateName = ( std::find(namesInUse.begin(), namesInUse.end(), info.name) != namesInUse.end());
+
+            if ( duplicateName ) {
+                ImGui::PushStyleColor(ImGuiCol_Text,        ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_FrameBg,     ImVec4(0.2f, 0.0f, 0.0f, 1.0f));
+            }
+
+            if ( addedButtonLastFrame && (i == numRows-1) ) {
+                ImGui::SetKeyboardFocusHere();
+                addedButtonLastFrame = false;
+            }
+
             ImGui::InputText(buf, info.name, MAX_TWEAK_LABEL_LEN-1);
+
+            if ( duplicateName )
+                ImGui::PopStyleColor(2);
+
+            namesInUse.push_back( info.name );
+
+            if ( ImGui::IsItemEdited() )
+                wasChanged = true;
 
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(90);
             sprintf(buf, "##tweakmin%d", i);
             ImGui::InputFloat(buf, &info.minval, 0, 0, NULL, ImGuiInputTextFlags_CharsDecimal);
 
+            if ( ImGui::IsItemEdited() )
+                wasChanged = true;
+
             ImGui::TableSetColumnIndex(2);
             ImGui::PushItemWidth(90);
             sprintf(buf, "##tweakmax%d", i);
-            ImGui::InputFloat(buf, &info.maxval, 0, 0, NULL, ImGuiInputTextFlags_CharsDecimal);
+            ImGui::InputFloat(buf, &info.maxval, 0, 0, NULL, ImGuiInputTextFlags_CharsDecimal);            
+
+            if ( ImGui::IsItemEdited() )
+                wasChanged = true;
+
+
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+            ImGui::SameLine();
+            sprintf(buf, "Delete##%d", i);
+            if ( ImGui::Button(buf) ) {
+                tweakIdToDelete = info.id;
+            }
+            ImGui::PopStyleColor(3);
+
+
+            if ( duplicateName ) {
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text,        ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+                ImGui::Text("Duplicate name, will be ignored!");
+                ImGui::PopStyleColor(1);
+            }
 
             if ( info.floatval < info.minval )
                 info.floatval = info.minval;
             if ( info.floatval > info.maxval )
                 info.floatval = info.maxval;
+
+            if ( wasChanged ) {
+                info.dirty = true;
+                somethingChanged = true;
+            }
         }
         ImGui::EndTable();
     }
@@ -262,10 +419,33 @@ void showTweakHooks()
     if ( ImGui::Button("Add tweak") ) {
         tweakInfo_t info;
         tweakInfos.push_back(info);
+        somethingChanged = true;
+        addedButtonLastFrame = true;
     }
+
+    if ( tweakIdToDelete > 0 ) {
+        deleteTweak( tweakIdToDelete );
+        tweakIdToDelete = 0;
+    }
+
+    return somethingChanged;
 }
 
-void showHooksView(bool* p_open) {
+void showHooksView(bool* p_open, float dt) {
+
+    bool wasZero = eventHooksNeedSaveTimer == 0;
+
+    eventHooksNeedSaveTimer -= dt;
+    if ( eventHooksNeedSaveTimer < 0 )
+        eventHooksNeedSaveTimer = 0;
+
+    bool isZero = eventHooksNeedSaveTimer == 0;
+
+    if ( ! wasZero && isZero ) {
+        saveEventHooksToDB();
+    }
+
+    bool somethingChanged = false;
 
     ImGui::SetNextWindowSize(ImVec2(640, 480), ImGuiCond_FirstUseEver);
 
@@ -278,23 +458,26 @@ void showHooksView(bool* p_open) {
         {
             if (ImGui::BeginTabItem("Function keys"))
             {
-                showFunctionKeyHooks();
+                somethingChanged |= showFunctionKeyHooks();
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("GUI buttons"))
             {
-                showCustomButtonHooks();
+                somethingChanged |= showCustomButtonHooks();
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("Tweaks"))
             {
-                showTweakHooks();
+                somethingChanged |= showTweakHooks();
                 ImGui::EndTabItem();
             }
 
             ImGui::EndTabBar();
         }
     }
+
+    if ( somethingChanged )
+        eventHooksNeedSaveTimer = EHST_TIMEOUT;
 
     doLayoutSave(SCRIPT_HOOKS_WINDOW_TITLE);
 
@@ -330,3 +513,39 @@ tweakInfo_t *getTweakByName(std::string name)
     }
     return NULL;
 }
+
+void deleteCustomButton( int id ) {
+    string errMsg;
+    vector< vector<string> > tmp;
+    if ( executeDatabaseStatement_generic("DELETE FROM internal_eventhook where type = 'button' and id = "+to_string(id), &tmp, errMsg) ) {
+        for (int i = 0; i < (int)customButtonHookInfos.size(); i++) {
+            customButtonHookInfo_t& info = customButtonHookInfos[i];
+            if ( info.id == id ) {
+                customButtonHookInfos.erase( customButtonHookInfos.begin() + i );
+                return;
+            }
+        }
+    }
+}
+
+void deleteTweak( int id ) {
+    string errMsg;
+    vector< vector<string> > tmp;
+    if ( executeDatabaseStatement_generic("DELETE FROM internal_tweak where id = "+to_string(id), &tmp, errMsg) ) {
+        for (int i = 0; i < (int)tweakInfos.size(); i++) {
+            tweakInfo_t& info = tweakInfos[i];
+            if ( info.id == id ) {
+                tweakInfos.erase( tweakInfos.begin() + i );
+                return;
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+

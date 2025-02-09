@@ -64,6 +64,7 @@ struct visionContext_t {
     uint8_t colred;
     uint8_t colgrn;
     uint8_t colblu;
+    float fontSize;
     int windowSize;
 
     visionContext_t() {
@@ -71,6 +72,7 @@ struct visionContext_t {
         colred = 255;
         colgrn = 255;
         colblu = 255;
+        fontSize = 20;
         windowSize = 9999;
     }
 };
@@ -135,9 +137,9 @@ script_rotatedRect* script_minAreaRect(int lx, int ux, int ly, int uy);
 class CScriptArray* script_findCircles(float diameter);
 
 class CScriptArray* script_findQRCodes(int howMany);
-void script_drawQRCode(script_qrcode& q);
+void script_drawQRCode(script_qrcode& q, float fontSize);
 
-void script_drawText(std::string msg, float x, float y);
+void script_drawText(std::string msg, float x, float y, float fontSize);
 
 void script_blurF(float kernelSize);
 void script_hsvThresholdF(float mh, float hRange, float ls, float us, float lv, float uv);
