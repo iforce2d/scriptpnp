@@ -22,6 +22,7 @@
 #include "usbcamera.h"
 #include "tableView.h"
 #include "notify.h"
+#include "util.h"
 
 #include "workspace.h"
 #include "script_probing.h"
@@ -96,6 +97,8 @@ void vec3_initConstructor(float x, float y, float z, script_vec3 *self)
 }
 
 
+float script_DEGTORAD = DEGTORAD;
+float script_RADTODEG = RADTODEG;
 
 bool setupScriptEngine()
 {
@@ -168,6 +171,11 @@ bool setupScriptEngine()
     r = engine->RegisterGlobalProperty("const int VP_GRN", &script_VP_GRN);
     assert( r >= 0 );
     r = engine->RegisterGlobalProperty("const int VP_BLU", &script_VP_BLU);
+    assert( r >= 0 );
+
+    r = engine->RegisterGlobalProperty("const float DEGTORAD", &script_DEGTORAD);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalProperty("const float RADTODEG", &script_RADTODEG);
     assert( r >= 0 );
 
 
