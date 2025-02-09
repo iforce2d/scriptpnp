@@ -98,6 +98,7 @@ Camera camera;
 ImFont* font_proggy = NULL;
 ImFont* font_ubuntuMono = NULL;
 ImFont* font_sourceCodePro = NULL;
+ImFont* font_visionOverlay = NULL;
 
 #define STATUS_WINDOW_TITLE "Status"
 
@@ -119,6 +120,52 @@ scv::vec3 lightPos3 = vec3(100, 680, 230);
 bool enableLight1 = true;
 bool enableLight2 = true;
 bool enableLight3 = true;
+
+void drawPlayPauseIconOutline(int frameBufferWidth, int frameBufferHeight) {
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(  10, frameBufferHeight - 30);
+    glVertex2f( 100, frameBufferHeight - 30);
+    glVertex2f( 100, frameBufferHeight - 130);
+    glVertex2f(  10, frameBufferHeight - 130);
+    glEnd();
+}
+
+void drawPlayIcon(int frameBufferWidth, int frameBufferHeight) {
+
+    glLineWidth(4);
+    glBegin(GL_TRIANGLE_FAN);
+
+    glColor4f(0,1,0, 0.66);
+    glVertex2f( 20, frameBufferHeight - 40);
+    glVertex2f( 90, frameBufferHeight - 80);
+    glVertex2f( 20, frameBufferHeight - 120);
+
+    glEnd();
+
+    drawPlayPauseIconOutline(frameBufferWidth, frameBufferHeight);
+}
+
+void drawPauseIcon(int frameBufferWidth, int frameBufferHeight) {
+
+    glColor4f(0,1,1, 0.66);
+    glLineWidth(4);
+
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f( 20, frameBufferHeight - 40);
+    glVertex2f( 50, frameBufferHeight - 40);
+    glVertex2f( 50, frameBufferHeight - 120);
+    glVertex2f( 20, frameBufferHeight - 120);
+    glEnd();
+
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f( 60, frameBufferHeight - 40);
+    glVertex2f( 90, frameBufferHeight - 40);
+    glVertex2f( 90, frameBufferHeight - 120);
+    glVertex2f( 60, frameBufferHeight - 120);
+    glEnd();
+
+    drawPlayPauseIconOutline(frameBufferWidth, frameBufferHeight);
+}
 
 // Draw 3 simple lines to show the world origin location
 void drawAxes() {
@@ -314,6 +361,41 @@ void* nozzleTipModel = NULL;
 void backgroundRenderCallback_loading(const ImDrawList* parent_list, const ImDrawCmd* cmd) {
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+float playPauseIconTimer = 0;
+void foregroundRenderCallback(const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+
+    glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
+
+    glBindTexture(GL_TEXTURE_2D, 0); // webcam view binds texture, we want none
+
+    glDisable(GL_SCISSOR_TEST);
+
+    glClearColor(0,0,0,0);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, frameBufferWidth, 0, frameBufferHeight);//, -1, 1);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glDisable(GL_DEPTH_TEST);
+
+    if ( playPauseIconTimer > 0.5 ) {
+        if ( currentlyPausingScript() )
+            drawPauseIcon(frameBufferWidth, frameBufferHeight);
+        else if ( currentlyRunningScriptThread() )
+            drawPlayIcon(frameBufferWidth, frameBufferHeight);
+    }
+
+    glPopMatrix();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
 }
 
 // This function will be called during ImGui's rendering, while drawing the background.
@@ -948,6 +1030,7 @@ int main(int, char**)
     font_proggy =        tryLoadFont( "fonts/ProggyVector-Regular.ttf", 18.0f );
     font_sourceCodePro = tryLoadFont( "fonts/SourceCodePro-Regular.ttf", 18.0f );
     font_ubuntuMono =    tryLoadFont( "fonts/UbuntuMono-Regular.ttf", 18.0f);
+    font_visionOverlay = tryLoadFont( "fonts/FreeSans.ttf", 48.0f );
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowRounding = 4;
@@ -1462,6 +1545,9 @@ int main(int, char**)
 
         }
 
+        playPauseIconTimer += io.DeltaTime;
+        if ( playPauseIconTimer > 1 )
+            playPauseIconTimer -= 1;
 
 
         ImGui_ImplOpenGL2_NewFrame();
@@ -1470,6 +1556,9 @@ int main(int, char**)
 
         ImDrawList* bgdl = ImGui::GetBackgroundDrawList();
         bgdl->AddCallback(backgroundRenderCallback, nullptr);
+
+        ImDrawList* fgdl = ImGui::GetForegroundDrawList();
+        fgdl->AddCallback(foregroundRenderCallback, nullptr);
 
         //showPointLabel( bgdl, vec3_zero, "Zero", ImColor(255,255,0,255), ImColor(255,255,255,255) );
         //showPointLabel( bgdl, vec3(50,50,0), "Fifty", ImColor(0,255,0,255), ImColor(192,192,192,255) );
@@ -2286,13 +2375,13 @@ int main(int, char**)
         //     showOverridesView(&show_overrides_view);
 
         if ( show_hooks_view )
-            showHooksView(&show_hooks_view);
+            showHooksView(&show_hooks_view, io.DeltaTime);
 
         if ( show_custom_view )
             showCustomView(&show_custom_view);
 
         if ( show_tweaks_view )
-            showTweaksView(&show_tweaks_view);
+            showTweaksView(&show_tweaks_view, io.DeltaTime);
 
         if ( show_table_views )
             showTableViewSelection(&show_table_views);

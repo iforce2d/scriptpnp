@@ -769,6 +769,9 @@ void script_wait(int millis)
 
 void script_setDigitalOut(int which, int toWhat)
 {
+    if ( getActivePreviewOnly() )
+        return;
+
     commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
     req.setDigitalOutputs.bits = toWhat ? 0xff : 0;
     req.setDigitalOutputs.changed = setBitPosition(which);
@@ -777,6 +780,9 @@ void script_setDigitalOut(int which, int toWhat)
 
 void script_setPWMOut(float toWhat)
 {
+    if ( getActivePreviewOnly() )
+        return;
+
     if ( toWhat < 0 ) toWhat = 0;
     if ( toWhat > 1 ) toWhat = 1;
     commandRequest_t req = createCommandRequest(MT_SET_PWM_OUTPUT);

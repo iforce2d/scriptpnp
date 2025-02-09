@@ -1680,9 +1680,29 @@ CScriptArray* script_findQRCodes(int howMany) {
 
 
 
+script_vec3 script_qrcode::getCenter()
+{
+    script_vec3 v;
+    float avgX = 0;
+    float avgY = 0;
+    for (int i = 0; i < numPoints; i++) {
+        int ind0 = (i) % numPoints;
+        int x1 = outlinePoints[ 2*ind0 ];
+        int y1 = outlinePoints[ 2*ind0+1 ];
+        avgX += x1;
+        avgY += y1;
+    }
+    avgX /= (float)numPoints;
+    avgY /= (float)numPoints;
 
+    v.x = avgX;
+    v.y = avgY;
+    v.z = 0;
 
-void script_drawText(string msg, float x, float y)
+    return v;
+}
+
+void script_drawText(string msg, float x, float y, float fontSize)
 {
     if ( pthread_self() != mainThreadId )
         return; // only webcam views can actually do anything
@@ -1694,13 +1714,14 @@ void script_drawText(string msg, float x, float y)
     t.text = msg;
     t.x = x;
     t.y = y;
+    t.fontSize = fontSize;
     t.r = ctx->colred;
     t.g = ctx->colgrn;
     t.b = ctx->colblu;
     ctx->renderTexts.push_back(t);
 }
 
-void script_drawQRCode(script_qrcode& q)
+void script_drawQRCode(script_qrcode& q, float fontSize)
 {
     if ( pthread_self() != mainThreadId )
         return; // only webcam views can actually do anything
@@ -1729,6 +1750,7 @@ void script_drawQRCode(script_qrcode& q)
     t.text = q.value;
     t.x = avgX;
     t.y = avgY;
+    t.fontSize = fontSize;
     t.r = ctx->colred;
     t.g = ctx->colgrn;
     t.b = ctx->colblu;

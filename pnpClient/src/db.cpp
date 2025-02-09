@@ -95,6 +95,8 @@ bool executeDatabaseStatement(std::string statement, dbRowCallback cb, std::stri
         return false;
     }
 
+    g_log.log(LL_DEBUG, "executeDatabaseStatement: %s", statement.c_str());
+
     char *zErrMsg = 0;
     int rc = sqlite3_exec(db, statement.c_str(), cb, 0, &zErrMsg);
     if( rc != SQLITE_OK ) {
@@ -320,6 +322,11 @@ int getNextUntitledPathOfTypeFromDB(std::string dbFileType, std::string &errMsg)
     sqlite3_finalize(stmt);
 
     return val + 1;
+}
+
+int getLastInsertId()
+{
+    return (int)sqlite3_last_insert_rowid( db );
 }
 
 

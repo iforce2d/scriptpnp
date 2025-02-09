@@ -12,6 +12,9 @@ extern vector<usbCameraInfo_t*> usbCameraInfos;
 
 bool script_setUSBCameraParams(int index, int zoom, int focus, int exposure, int whiteBalance, int saturation)
 {
+    if ( getActivePreviewOnly() )
+        return false;
+
     ScriptLog* slog = (ScriptLog*)getActiveScriptLog();
 
     if ( index < 0 || index >= (int)usbCameraInfos.size() ) {
