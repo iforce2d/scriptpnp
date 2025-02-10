@@ -19,6 +19,11 @@ motionLimits currentRotationLimits[NUM_ROTATION_AXES];
 float stepsPerUnit[NUM_MOTION_AXES];
 float joggingSpeeds[NUM_MOTION_AXES];
 
+uint16_t estopDigitalOutState;
+uint16_t estopDigitalOutUsed;
+float estopPWMState[NUM_PWM_VALS];
+uint8_t estopPWMUsed;
+
 tmcSettings_t tmcParams[NUM_MOTION_AXES];
 homingParams_t homingParams[4];
 probingParams_t probingParams;
@@ -36,6 +41,7 @@ char homingOrder[9];
 #define CONFIG_OVERRIDES                "outputOverrides"
 #define CONFIG_LOADCELL_CALIB           "loadcellCalib"
 #define CONFIG_PROBING_PARAMS           "probingParams"
+#define CONFIG_ESTOP_PARAMS             "estopParams"
 
 void initTMCSettings(tmcSettings_t& p) {
     p.microsteps = 4;
@@ -608,6 +614,21 @@ bool readConfigFile()
         }
     }
 
+    if ( fileValue.isMember(CONFIG_ESTOP_PARAMS) ) {
+        Json::Value estopParamsValue = fileValue[CONFIG_ESTOP_PARAMS];
+        estopDigitalOutState = estopParamsValue.get("outputs", 0).asInt();
+        estopDigitalOutUsed = estopParamsValue.get("outputsUsed", 0).asInt();
+        g_log.log(LL_DEBUG, "Config: estop outputs = %d", estopDigitalOutState);
+        g_log.log(LL_DEBUG, "Config: estop outputs used = %d", estopDigitalOutUsed);
+        for (int i = 0; i < NUM_PWM_VALS; i++ ) {
+            sprintf(buf, "pwm%d", i);
+            estopPWMState[i] = estopParamsValue.get(buf, 0).asFloat();
+            g_log.log(LL_DEBUG, "Config: estop %s = %f", buf, estopPWMState[i]);
+        }
+        estopPWMUsed = estopParamsValue.get("pwmUsed", 0).asInt();
+        g_log.log(LL_DEBUG, "Config: estop PWM used = %d", estopPWMUsed);
+    }
+
     if ( fileValue.isMember(CONFIG_OVERRIDES) ) {
         Json::Value overridesValue = fileValue[CONFIG_OVERRIDES];
         if ( overridesValue.isArray() ) {
@@ -756,6 +777,17 @@ bool saveConfigToFile()
         jogSpeedsValue[buf] = joggingSpeeds[i];
     }
     fileValue[CONFIG_JOG_SPEEDS] = jogSpeedsValue;
+
+
+    Json::Value estopParamsValue;
+    estopParamsValue["outputs"] = estopDigitalOutState;
+    estopParamsValue["outputsUsed"] = estopDigitalOutUsed;
+    for (int i = 0; i < NUM_PWM_VALS; i++ ) {
+        sprintf(buf, "pwm%d", i);
+        estopParamsValue[buf] = estopPWMState[i];
+    }
+    estopParamsValue["pwmUsed"] = estopPWMUsed;
+    fileValue[CONFIG_ESTOP_PARAMS] = estopParamsValue;
 
 
     Json::Value outputOverridesValue;

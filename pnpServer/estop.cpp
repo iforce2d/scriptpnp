@@ -4,6 +4,7 @@
 
 #include "motionGlobals.h"
 #include "estop.h"
+#include "weeny.h"
 
 using namespace scv;
 
@@ -45,6 +46,23 @@ void initEstop() {
         printf("estop: already stopped (currentVelMag = %f)\n", currentVelMag);
         currentTraj = NULL;
         motionMode = MM_NONE;
+    }
+
+    // reset any outputs as necesary
+    for (int i = 0; i < 16; i++) {
+        uint16_t theBit = (1 << i);
+        if ( estopDigitalOutUsed & theBit ) {
+            if ( estopDigitalOutState & theBit )
+                data.outputs |= theBit;
+            else
+                data.outputs &= ~theBit;
+        }
+    }
+
+    for (int i = 0; i < NUM_PWM_VALS; i++) {
+        if ( estopPWMUsed & (1 << i) ) {
+            data.spindleSpeed = (uint16_t)(estopPWMState[i] * 65535);
+        }
     }
 }
 

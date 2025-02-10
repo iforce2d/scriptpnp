@@ -323,6 +323,15 @@ void processCommandReply(commandRequest_t* req, bool ackOrNack) {
         rep.type = MT_CONFIG_PROBING_FETCH; // a 'set' will also reply with the same reply as 'fetch'
         rep.probingParams.params = probingParams;
     }
+    else if ( req->type == MT_CONFIG_ESTOP_FETCH || req->type == MT_CONFIG_ESTOP_SET ) {
+        rep.type = MT_CONFIG_ESTOP_FETCH; // a 'set' will also reply with the same reply as 'fetch'
+        rep.estopParams.outputs = estopDigitalOutState;
+        rep.estopParams.outputsUsed = estopDigitalOutUsed;
+        for (int i = 0; i < NUM_PWM_VALS; i++) {
+            rep.estopParams.pwmVal[i] = estopPWMState[i];
+        }
+        rep.estopParams.pwmUsed = estopPWMUsed;
+    }
 
 
     size_t msgSize = sizeof(commandReply_t);

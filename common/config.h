@@ -51,6 +51,11 @@ void initProbingParams(probingParams_t& p);
 extern float stepsPerUnit[NUM_MOTION_AXES];
 extern float joggingSpeeds[NUM_MOTION_AXES];
 
+extern uint16_t estopDigitalOutState;
+extern uint16_t estopDigitalOutUsed;
+extern float estopPWMState[NUM_PWM_VALS];
+extern uint8_t estopPWMUsed;
+
 extern tmcSettings_t tmcParams[NUM_MOTION_AXES];
 extern homingParams_t homingParams[NUM_HOMABLE_AXES];
 

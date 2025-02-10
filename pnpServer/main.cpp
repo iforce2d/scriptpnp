@@ -755,6 +755,12 @@ void resetConfig() {
         stepsPerUnit[i] = 0.04;
     }
 
+    estopDigitalOutState = 0;
+    estopDigitalOutUsed = 0;
+    for (int i = 0; i < NUM_PWM_VALS; i++)
+        estopPWMState[i] = 0;
+    estopPWMUsed = 0;
+
     for (int i = 0; i < NUM_ROTATION_AXES; i++) {
         currentRotationLimits[i].vel = 0;
         currentRotationLimits[i].acc = 0;
@@ -1644,6 +1650,18 @@ int main() {
 
                     saveConfigToFile();
                 }
+            }
+            else if ( req.type == MT_CONFIG_ESTOP_FETCH ) {
+
+            }
+            else if ( req.type == MT_CONFIG_ESTOP_SET ) {
+                estopDigitalOutState = req.estopParams.outputs;
+                estopDigitalOutUsed = req.estopParams.outputsUsed;
+                for (int i = 0; i < NUM_PWM_VALS; i++)
+                    estopPWMState[i] = req.estopParams.pwmVal[i];
+                estopPWMUsed = req.estopParams.pwmUsed;
+
+                saveConfigToFile();
             }
             else if ( req.type == MT_CONFIG_OVERRIDES_FETCH ) {
 
