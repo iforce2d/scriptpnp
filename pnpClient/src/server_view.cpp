@@ -25,6 +25,11 @@ char homingOrder[9];
 float config_stepsPerUnit[NUM_MOTION_AXES];
 float config_jogSpeed[NUM_MOTION_AXES];
 
+uint16_t config_estopDigitalOutState = 0;
+uint16_t config_estopDigitalOutUsed = 0;
+float config_estopPWMState[NUM_PWM_VALS] = {0};
+uint8_t config_estopPWMUsed = 0;
+
 float config_workingAreaX;
 float config_workingAreaY;
 float config_workingAreaZ;
@@ -49,6 +54,7 @@ void fetchAllServerConfigs() {
     sendCommandRequestOfType(MT_CONFIG_OVERRIDES_FETCH);
     sendCommandRequestOfType(MT_CONFIG_LOADCELL_CALIB_FETCH);
     sendCommandRequestOfType(MT_CONFIG_PROBING_FETCH);
+    sendCommandRequestOfType(MT_CONFIG_ESTOP_FETCH);
 }
 
 void showRequestInProgress() {
@@ -191,7 +197,7 @@ void showWorkingAreaSetup()
 
 void showMotionLimitsSetup()
 {
-    ImGui::TextWrapped("Hard limits per individual axis which cannot be exceeded. These are the maximum allowable speed each axis can physically perform safely.");
+    ImGui::TextWrapped("Hard limits per individual axis to never be exceeded, even if commands or script call for higher values.");
 
     const char* axisNames = "XYZ"; // use Z for W as well
     char buf[32];
@@ -276,7 +282,7 @@ void showMotionLimitsSetup()
     ImGui::NewLine();
 
     ImGui::Separator();
-    ImGui::TextWrapped("Initial nozzle/head speed limits to allow after machine startup. These values remain in effect until modified by command lists, eg. with 'sml' and 'srl' commands.");
+    ImGui::TextWrapped("Initial settings to use after machine startup. These values remain in effect until modified by command lists, eg. with 'sml' and 'srl' commands.");
 
     ImGui::SeparatorText("Move");
 
@@ -623,7 +629,7 @@ void showHomingSetup()
 
 void showJogSpeedsSetup()
 {
-    ImGui::Text("Jog speeds, in units/second (or degrees/second for rotation)");
+    ImGui::TextWrapped("Jog speeds, in units/second (or degrees/second for rotation)");
 
     const char* axisNames = "XYZWABCD";
     char buf[32];
@@ -659,6 +665,132 @@ void showJogSpeedsSetup()
         for (int i = 0; i < NUM_MOTION_AXES; i++) {
             req.jogParams.speed[i] = config_jogSpeed[i];
         }
+        sendCommandRequest(&req);
+    }
+
+    showRequestInProgress();
+}
+
+void showEstopSetup()
+{
+    ImGui::TextWrapped("E-stop will immediately abort any ongoing scripts, which may leave some outputs in an undesirable state. Specify here how outputs should behave on e-stop.");
+
+    char buf[32];
+    char popupName[32];
+
+    ImGui::SeparatorText("Digital outputs");
+
+    if (ImGui::BeginTable("estopDigitalTable", 2, ImGuiTableFlags_SizingFixedFit))
+    {
+        for (int i = 0; i < 16; i++) {
+            sprintf(buf, "%d:", i);
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+
+            ImGui::Text(buf);
+
+            ImGui::TableSetColumnIndex(1);
+
+            ImGui::PushItemWidth(140);
+
+            if ( config_estopDigitalOutUsed & (1 << i) ) {
+                if ( config_estopDigitalOutState & (1 << i) )
+                    sprintf(buf, "high##estopdig%d", i);
+                else
+                    sprintf(buf, "low##estopdig%d", i);
+            }
+            else
+                sprintf(buf, "no change##estopdig%d", i);
+
+            sprintf(popupName, "estopdig%d", i);
+
+            if (ImGui::Button(buf))
+                ImGui::OpenPopup(popupName);
+            if (ImGui::BeginPopup(popupName)) {
+                if (ImGui::Selectable("no change")) {
+                    config_estopDigitalOutState &= ~(1 << i);
+                    config_estopDigitalOutUsed  &= ~(1 << i);
+                }
+                if (ImGui::Selectable("low")) {
+                    config_estopDigitalOutState &= ~(1 << i);
+                    config_estopDigitalOutUsed  |=  (1 << i);
+                }
+                if (ImGui::Selectable("high")) {
+                    config_estopDigitalOutState |=  (1 << i);
+                    config_estopDigitalOutUsed  |=  (1 << i);
+                }
+                ImGui::EndPopup();
+            }
+        }
+        ImGui::EndTable();
+    }
+
+    ImGui::SeparatorText("PWM outputs");
+
+    if (ImGui::BeginTable("estopPWMTable", 2, ImGuiTableFlags_SizingFixedFit))
+    {
+        for (int i = 0; i < NUM_PWM_VALS; i++) {
+            sprintf(buf, "PWM %d:", i);
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+
+            ImGui::Text(buf);
+
+            ImGui::TableSetColumnIndex(1);
+
+            ImGui::PushItemWidth(140);
+
+            if ( config_estopPWMUsed & (1 << i) )
+                sprintf(buf, "set to##estoppwm%d", i);
+            else
+                sprintf(buf, "no change##estoppwm%d", i);
+
+            sprintf(popupName, "estoppwmused%d", i);
+
+            if (ImGui::Button(buf))
+                ImGui::OpenPopup(popupName);
+            if (ImGui::BeginPopup(popupName)) {
+                if (ImGui::Selectable("no change")) {
+                    config_estopPWMUsed  &= ~(1 << i);
+                }
+                if (ImGui::Selectable("set to")) {
+                    config_estopPWMUsed |=  (1 << i);
+                }
+                ImGui::EndPopup();
+            }
+
+            if ( config_estopPWMUsed & (1 << i) ) {
+                ImGui::SameLine();
+
+                ImGui::PushItemWidth(120);
+                sprintf(buf, "##estoppwmval%d", i);
+                float tmpf = config_estopPWMState[i];
+                const char* floatFmt = tmpf == 0 ? "%.0f" : "%.3f";
+                ImGui::InputFloat(buf, &tmpf, 0, 0, floatFmt);
+                if ( tmpf < 0 ) tmpf = 0;
+                if ( tmpf > 1 ) tmpf = 1;
+                config_estopPWMState[i] = tmpf;
+            }
+        }
+        ImGui::EndTable();
+    }
+
+    ImGui::NewLine();
+
+    if ( ImGui::Button("Fetch") ) {
+        sendCommandRequestOfType(MT_CONFIG_ESTOP_FETCH);
+    }
+    ImGui::SameLine();
+    if ( ImGui::Button("Save") ) {
+        commandRequest_t req = createCommandRequest( MT_CONFIG_ESTOP_SET );
+        req.estopParams.outputs = config_estopDigitalOutState;
+        req.estopParams.outputsUsed = config_estopDigitalOutUsed;
+        for (int i = 0; i < NUM_MOTION_AXES; i++) {
+            req.estopParams.pwmVal[i] = config_estopPWMState[i];
+        }
+        req.estopParams.pwmUsed = config_estopPWMUsed;
         sendCommandRequest(&req);
     }
 
@@ -1035,6 +1167,15 @@ void showServerView(bool* p_open)
                 if ( currentTabIndex != oldTabIndex )
                     sendCommandRequestOfType(MT_CONFIG_JOGGING_FETCH);
                 showJogSpeedsSetup();
+                ImGui::EndTabItem();
+            }
+            whichTab++;
+            if (ImGui::BeginTabItem("E-stop"))
+            {
+                currentTabIndex = whichTab;
+                if ( currentTabIndex != oldTabIndex )
+                    sendCommandRequestOfType(MT_CONFIG_ESTOP_FETCH);
+                showEstopSetup();
                 ImGui::EndTabItem();
             }
             whichTab++;

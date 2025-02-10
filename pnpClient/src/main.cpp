@@ -1529,6 +1529,14 @@ int main(int, char**)
                     config_jogSpeed[i] = rep.jogParams.speed[i];
                 }
             }
+            else if ( rep.type == MT_CONFIG_ESTOP_FETCH ) {
+                config_estopDigitalOutState = rep.estopParams.outputs;
+                config_estopDigitalOutUsed = rep.estopParams.outputsUsed;
+                for (int i = 0; i < NUM_PWM_VALS; i++) {
+                    config_estopPWMState[i] = rep.estopParams.pwmVal[i];
+                }
+                config_estopPWMUsed = rep.estopParams.pwmUsed;
+            }
             else if ( rep.type == MT_CONFIG_OVERRIDES_FETCH ) {
 
             }

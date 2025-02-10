@@ -6,7 +6,7 @@
 
 #include "../common/config.h"
 
-#define MESSAGE_VERSION 1
+#define MESSAGE_VERSION 2
 
 #define NUM_ROTATION_AXES 4
 
@@ -51,6 +51,8 @@
     tmpMacro(MT_CONFIG_LOADCELL_CALIB_FETCH)\
     tmpMacro(MT_CONFIG_PROBING_SET)\
     tmpMacro(MT_CONFIG_PROBING_FETCH)\
+    tmpMacro(MT_CONFIG_ESTOP_SET)\
+    tmpMacro(MT_CONFIG_ESTOP_FETCH)\
     tmpMacro(MT_MAX)
 
 
@@ -261,6 +263,13 @@ typedef struct PACKED {
     probingParams_t params;
 } msg_configProbing;
 
+typedef struct PACKED {
+    uint16_t outputs;
+    uint16_t outputsUsed;
+    float pwmVal[NUM_PWM_VALS];
+    uint8_t pwmUsed;
+} msg_configEstop;
+
 
 
 // Note that a commandRequest_t must be POD because it might be queued in requestsQueue
@@ -288,6 +297,7 @@ typedef struct PACKED {
         msg_configJogging jogParams;
         msg_configLoadCellCalib loadcellCalib;
         msg_configProbing probingParams;
+        msg_configEstop estopParams;
     } PACKED;
 } commandRequest_t;
 
@@ -309,6 +319,7 @@ typedef struct PACKED {
         msg_configJogging jogParams;
         msg_configLoadCellCalib loadcellCalib;
         msg_configProbing probingParams;
+        msg_configEstop estopParams;
     } PACKED;
 } commandReply_t;
 

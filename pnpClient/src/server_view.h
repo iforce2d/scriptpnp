@@ -10,6 +10,11 @@ extern char serverHostname[128];
 extern float config_stepsPerUnit[NUM_MOTION_AXES];
 extern float config_jogSpeed[NUM_MOTION_AXES];
 
+extern uint16_t config_estopDigitalOutState;
+extern uint16_t config_estopDigitalOutUsed;
+extern float config_estopPWMState[NUM_PWM_VALS];
+extern uint8_t config_estopPWMUsed;
+
 extern float config_stepsPerUnitX;
 extern float config_stepsPerUnitY;
 extern float config_stepsPerUnitZ;
