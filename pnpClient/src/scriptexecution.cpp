@@ -484,30 +484,33 @@ bool resumeScript()
 }
 
 
+extern bool waitingForPreviousActualRun;
 
 void abortScript()
 {
     if ( currentlyRunningScriptThread() ) {
         asIScriptContext *ctx = getCurrentScriptContext();
 
-        if ( currentlyPausingScript() ) {
-            g_log.log(LL_DEBUG, "abortScript during pause");
+        if ( ctx ) {
+            if ( currentlyPausingScript() ) { // script is NOT running, so it will NOT periodically check if it needs to abort, and NOT continue through executeScriptContext, so need to clear everything here
+                g_log.log(LL_DEBUG, "abortScript during pause");
 
-            setIsScriptPaused( false );
-            setIsRunningScriptThread( false );
+                setIsScriptPaused( false );
+                setIsRunningScriptThread( false );
 
-            ctx->Abort();
-            cleanupScriptContext(ctx);
-            discardScriptModule( scriptThreadStartupInfo.mod );
-        }
-        else {
-            if ( ctx ) {
+                ctx->Abort();
+
+                cleanupScriptContext(ctx);
+                discardScriptModule( scriptThreadStartupInfo.mod );
+            }
+            else { // script is running, so it will periodically check if it needs to abort
 
                 g_log.log(LL_DEBUG, "abortScript during run");
 
                 //setIsRunningScriptThread( false );
 
-                ctx->Abort();
+                ctx->Abort(); // this sets the script context status to aborted, but it can only check the status in between script function calls
+                waitingForPreviousActualRun = false; // need to exit potential wait loop in doActualRun
 
                 //cleanupScriptContext(ctx);  don't do any cleanup here, let executeScriptContext do it
             }

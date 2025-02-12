@@ -11,6 +11,7 @@
 #include "machinelimits.h"
 #include "net_requester.h"
 #include "scriptexecution.h"
+#include "script/engine.h"
 
 using namespace std;
 using namespace scv;
@@ -27,6 +28,8 @@ bool waitingForPreviousActualRun = false; // true when server is running a comma
 bool doActualRun(vector<string> &lines)
 {
     g_log.log(LL_DEBUG, "doActualRun");
+
+    asIScriptContext *ctx = getCurrentScriptContext();
 
     while ( waitingForPreviousActualRun ) {
 
@@ -50,14 +53,15 @@ bool doActualRun(vector<string> &lines)
         program.rotationPositionLimits[i] = machineLimits.rotationPositionLimits[i];
 
     if ( parseCommandList(lines, program) ) { // uses heap
-
         if ( sanityCheckCommandList(program) ) {
             lastTrajResult = TR_NONE;
-            sendPackable(MT_SET_PROGRAM, program);
-            waitingForPreviousActualRun = true;
+            if ( sendPackable(MT_SET_PROGRAM, program) ) {
+                waitingForPreviousActualRun = true;
+                return true;
+            }
+            else
+                g_log.log(LL_DEBUG, "doActualRun: sendPackable failed - is server running?");
         }
-
-        return true;
     }
 
     return false;

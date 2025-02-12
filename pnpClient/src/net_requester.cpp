@@ -14,6 +14,7 @@
 #include "server_view.h"
 #include "overrides.h"
 #include "notify.h"
+#include "scriptexecution.h"
 
 extern void* context;
 void* requester = NULL;
@@ -304,12 +305,19 @@ void clearRequestsQueue()
     std::swap( requestsQueue, empty );
 }
 
+void abortScript();
+
 void checkRequestTimeout() {
     if ( numRequestsInProgress > 0 ) {
         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         long long timeSinceLastRequest = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastRequestSendTime).count();
         if ( timeSinceLastRequest > 1000 ) {
-            g_log.log(LL_DEBUG, "Send request timeout, resetting connection");
+            g_log.log(LL_WARN, "Send request timeout, resetting connection");
+
+            if ( currentlyRunningScriptThread() ) {
+                g_log.log(LL_WARN, "Aborting script due to request timeout - is server running?");
+                abortScript();
+            }
 
             stopRequester();
             stopSubscriber();

@@ -767,24 +767,21 @@ bool executeScriptContext(asIScriptContext *ctx)
             g_log.log(LL_ERROR, "Exception occurred while executing script: %s", ctx->GetExceptionString());
             currentScriptContext = NULL;
             cleanupScriptContext(ctx);
-            return false;
         }
         else if ( r == asEXECUTION_ABORTED ) {
             g_log.log(LL_INFO, "Aborted while executing script");
             currentScriptContext = NULL;
             cleanupScriptContext(ctx);
-            return false;
         }
         else if ( r == asEXECUTION_SUSPENDED ) {
             g_log.log(LL_INFO, "Suspended while executing script");
             isScriptPaused = true;
+
             // leave context as is !
+
             return true; // still running
         }
-        return false;
     }
-
-    //cleanupScriptContext(ctx);
 
     return false;
 }
