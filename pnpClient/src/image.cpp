@@ -113,54 +113,52 @@ bool loadPNG(string filename, int width, int height, uint8_t* bytes)
         return false;
     }
 
+    int bpp = 0;        // bytes per pixel
+    int useBytes = 0;   // bytes to use (will repeat if < 3)
+
+    switch ( color_type ) {
+        case PNG_COLOR_TYPE_GRAY:
+            bpp = 1;
+            useBytes = 1;
+            break;
+        case PNG_COLOR_TYPE_GRAY_ALPHA:
+            bpp = 2;
+            useBytes = 1;
+            break;
+        case PNG_COLOR_TYPE_RGB: bpp = 3;
+            bpp = 3;
+            useBytes = 3;
+            break;
+        case PNG_COLOR_TYPE_RGB_ALPHA: bpp = 3;
+            bpp = 4;
+            useBytes = 3;
+            break;
+        default:
+            g_log.log(LL_ERROR, "loadImage: unknown PNG color_type: %d", color_type);
+            return false;
+    }
+
     png_bytep* row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
 
-    if ( color_type == PNG_COLOR_TYPE_RGB ) {
-        for (int i = 0; i < height; i++)
-            row_pointers[i] = &(bytes[i * 3 * width]);
-        png_read_image(png_ptr, row_pointers);
-        png_read_end(png_ptr, NULL);
-    }
-    else if ( color_type == PNG_COLOR_TYPE_GRAY_ALPHA ) {
-        uint8_t* tmp = (uint8_t*)malloc( width * height * 2 );
-        for (int i = 0; i < height; i++)
-            row_pointers[i] = &(tmp[i * 2 * width]);
-        png_read_image(png_ptr, row_pointers);
-        png_read_end(png_ptr, NULL);
+    uint8_t* tmp = (uint8_t*)malloc( width * height * bpp );
+    for (int i = 0; i < height; i++)
+        row_pointers[i] = &(tmp[i * bpp * width]);
+    png_read_image(png_ptr, row_pointers);
+    png_read_end(png_ptr, NULL);
 
-        int ind = 0;
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                uint8_t p = row_pointers[y][2*x];
-                bytes[ind++] = p;
-                bytes[ind++] = p;
-                bytes[ind++] = p;
-            }
+    int ind = 0;
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int offset = 0;
+            bytes[ind++] = row_pointers[y][bpp*x+(offset%useBytes)];
+            offset++;
+            bytes[ind++] = row_pointers[y][bpp*x+(offset%useBytes)];
+            offset++;
+            bytes[ind++] = row_pointers[y][bpp*x+(offset%useBytes)];
         }
-
-        free(tmp);
     }
-    else if ( color_type == PNG_COLOR_TYPE_RGB_ALPHA ) {
-        uint8_t* tmp = (uint8_t*)malloc( width * height * 4 );
-        for (int i = 0; i < height; i++)
-            row_pointers[i] = &(tmp[i * 4 * width]);
-        png_read_image(png_ptr, row_pointers);
-        png_read_end(png_ptr, NULL);
 
-        int ind = 0;
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                bytes[ind++] = row_pointers[y][4*x+0];
-                bytes[ind++] = row_pointers[y][4*x+1];
-                bytes[ind++] = row_pointers[y][4*x+2];
-            }
-        }
-
-        free(tmp);
-    }
-    else {
-        g_log.log(LL_ERROR, "loadImage: unknown PNG color_type: %d", color_type);
-    }
+    free(tmp);
 
     free(row_pointers);
 
