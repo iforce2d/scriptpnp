@@ -10,6 +10,7 @@ VisionVideoView::VisionVideoView()
     continuousUpdate = false;;
     entryFunction[0] = 0;
     sprintf(entryFunction, "circleSym");
+    shouldTryImageLoad = false;
 }
 
 void VisionVideoView::setCameraInfo(usbCameraInfo_t *info)
@@ -53,10 +54,14 @@ void VisionVideoView::prepareFunction()
     if ( ! entryFunction[0] )
         return;
 
+    shouldTryImageLoad = true;
+
     char buf[64];
     sprintf(buf, "visionVideoModule%d", cameraInfo->index);
     compileScript(buf, entryFunction, compiled);
 }
+
+extern bool script_shouldTryImageLoad;
 
 void VisionVideoView::runVision()
 {
@@ -67,6 +72,8 @@ void VisionVideoView::runVision()
         return;
 
     if ( compiled.func ) {
+        ctx->shouldTryImageLoad = shouldTryImageLoad;
+        shouldTryImageLoad = false;
         runCompiledFunction_simple(compiled);
     }
 }

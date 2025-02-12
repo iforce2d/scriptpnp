@@ -10,6 +10,9 @@ class VisionVideoView : public VideoView
     bool continuousUpdate;
     char entryFunction[128];
     compiledScript_t compiled;
+
+    bool shouldTryImageLoad; // image load should only be attempted once per click of the 'set' button
+
 public:
     VisionVideoView();
     void setCameraInfo(class usbCameraInfo_t* info);

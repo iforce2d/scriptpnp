@@ -964,6 +964,7 @@ void showProbeSetup() {
     }
 
     ImGui::NewLine();
+    ImGui::SeparatorText("Speeds and distances");
 
     if (ImGui::BeginTable("probespeeds", 2, ImGuiTableFlags_SizingFixedFit))
     {
@@ -1037,6 +1038,8 @@ void showProbeSetup() {
 
     static float probeZ = -8;
     static float probeMinWeight = 0;
+
+    ImGui::TextWrapped("You can use the buttons below to test each type of probe.");
 
     if (ImGui::BeginTable("probedigital", 2, ImGuiTableFlags_SizingFixedFit))
     {

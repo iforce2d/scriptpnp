@@ -67,6 +67,11 @@ struct visionContext_t {
     float fontSize;
     int windowSize;
 
+    bool lastLoadImageResult;
+    std::string lastLoadedImageFilename; // well... attempted to load
+    uint8_t* lastLoadedImageBuffer;
+    bool shouldTryImageLoad;
+
     visionContext_t() {
         buffers = NULL;
         colred = 255;
@@ -74,6 +79,11 @@ struct visionContext_t {
         colblu = 255;
         fontSize = 20;
         windowSize = 9999;
+
+        lastLoadImageResult = false;
+        lastLoadedImageFilename = ""; // well... attempted to load
+        lastLoadedImageBuffer = NULL;
+        shouldTryImageLoad = false;
     }
 };
 
@@ -130,9 +140,9 @@ void script_findContour(int method);
 void script_convexHull(bool drawLines);
 void script_flipFrame(int method);
 //void script_rotateContour(float radians);
-script_rotatedRect* script_minAreaRect_default();
-script_rotatedRect* script_minAreaRectF(float lx, float ux, float ly, float uy);
-script_rotatedRect* script_minAreaRect(int lx, int ux, int ly, int uy);
+//script_rotatedRect* script_minAreaRect_default();
+//script_rotatedRect* script_minAreaRectF(float minRatio, float maxRatio, float minArea, float maxArea, float maxDistFromCenter);
+script_rotatedRect* script_minAreaRect(float minRatio, float maxRatio, float minArea, float maxArea, float maxDistFromCenter);
 
 class CScriptArray* script_findCircles(float diameter);
 

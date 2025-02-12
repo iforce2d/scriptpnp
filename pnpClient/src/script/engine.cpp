@@ -323,6 +323,8 @@ bool setupScriptEngine()
 
     r = engine->RegisterObjectType("rect", sizeof(script_rotatedRect), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS | asOBJ_APP_CLASS_ALLFLOATS );
     assert( r >= 0 );
+    r = engine->RegisterObjectProperty("rect", "bool valid", offsetof(script_rotatedRect,valid));
+    assert( r >= 0 );
     r = engine->RegisterObjectProperty("rect", "float x", offsetof(script_rotatedRect,x));
     assert( r >= 0 );
     r = engine->RegisterObjectProperty("rect", "float y", offsetof(script_rotatedRect,y));
@@ -332,6 +334,8 @@ bool setupScriptEngine()
     r = engine->RegisterObjectProperty("rect", "float h", offsetof(script_rotatedRect,h));
     assert( r >= 0 );
     r = engine->RegisterObjectProperty("rect", "float angle", offsetof(script_rotatedRect,angle));
+    assert( r >= 0 );
+    r = engine->RegisterObjectProperty("rect", "float area", offsetof(script_rotatedRect,area));
     assert( r >= 0 );
 
     r = engine->RegisterGlobalFunction("int getUSBCameraIndexByHash(string fragment)", asFUNCTION(script_getUSBCameraIndexByHash), asCALL_CDECL);
@@ -357,7 +361,7 @@ bool setupScriptEngine()
     assert( r >= 0 );
     //r = engine->RegisterGlobalFunction("rect& minAreaRect()", asFUNCTION(script_minAreaRect_default), asCALL_CDECL);
     //assert( r >= 0 );
-    r = engine->RegisterGlobalFunction("rect& minAreaRect(float windowMinX = -1, float windowMaxX = -1, float windowMinY = -1, float windowMaxY = -1)", asFUNCTION(script_minAreaRectF), asCALL_CDECL);
+    r = engine->RegisterGlobalFunction("rect& minAreaRect(float ratioMin = -1, float ratioMax = -1, float minSideLength = -1, float maxSideLength = -1, float maxDistFromCenter = -1)", asFUNCTION(script_minAreaRect), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void convexHull(bool drawLines = false)", asFUNCTION(script_convexHull), asCALL_CDECL);
     assert( r >= 0 );

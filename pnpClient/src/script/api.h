@@ -104,10 +104,12 @@ public:
 
 class script_rotatedRect {
 public:
+    bool valid;
     float x;
     float y;
     float w;
     float h;
+    float area;
     float angle;
 };
 

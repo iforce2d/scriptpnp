@@ -2,6 +2,7 @@
 #include <png.h>
 #include <string.h>
 #include "image.h"
+#include "log.h"
 
 using namespace std;
 
@@ -59,33 +60,40 @@ bool savePNG(string filename, int width, int height, int planes, uint8_t* bytes)
     return true;
 }
 
-
-bool loadPNG(string filename, int width, int height, int planes, uint8_t* bytes)
+// always load into RGB buffer, bytes must be of size width*height*3 (drop alpha data)
+bool loadPNG(string filename, int width, int height, uint8_t* bytes)
 {
     FILE *fp = fopen(filename.c_str(), "rb");
-    if ( ! fp )
+    if ( ! fp ) {
+        g_log.log(LL_ERROR, "loadImage: file not found: %s", filename.c_str());
         return false;
+    }
 
     uint8_t sig[8];
 
     fread(sig, 1, 8, fp);
     if ( ! png_check_sig(sig, 8) ) {
+        g_log.log(LL_ERROR, "loadImage: not a PNG file: %s", filename.c_str());
         return false;
     }
 
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if ( ! png_ptr )
+    if ( ! png_ptr ) {
+        g_log.log(LL_ERROR, "loadImage: png_create_read_struct error: %s", filename.c_str());
         return false;
+    }
 
     png_infop info_ptr = png_create_info_struct(png_ptr);
     if ( ! info_ptr ) {
         png_destroy_read_struct(&png_ptr, NULL, NULL);
+        g_log.log(LL_ERROR, "loadImage: png_create_info_struct error: %s", filename.c_str());
         return false;
     }
 
     if (setjmp(png_jmpbuf(png_ptr))) {
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         fclose(fp);
+        g_log.log(LL_ERROR, "loadImage: setjmp error: %s", filename.c_str());
         return false;
     }
 
@@ -101,15 +109,58 @@ bool loadPNG(string filename, int width, int height, int planes, uint8_t* bytes)
 
     if ( (int)w != width || (int)h != height ) {
         fclose(fp);
+        g_log.log(LL_ERROR, "loadImage: invalid size (expected %dx%d): %s", width, height, filename.c_str());
         return false;
     }
 
     png_bytep* row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
-    for (int i = 0; i < height; i++)
-        row_pointers[i] = &(bytes[i * planes * width]);
 
-    png_read_image(png_ptr, row_pointers);
-    png_read_end(png_ptr, NULL);
+    if ( color_type == PNG_COLOR_TYPE_RGB ) {
+        for (int i = 0; i < height; i++)
+            row_pointers[i] = &(bytes[i * 3 * width]);
+        png_read_image(png_ptr, row_pointers);
+        png_read_end(png_ptr, NULL);
+    }
+    else if ( color_type == PNG_COLOR_TYPE_GRAY_ALPHA ) {
+        uint8_t* tmp = (uint8_t*)malloc( width * height * 2 );
+        for (int i = 0; i < height; i++)
+            row_pointers[i] = &(tmp[i * 2 * width]);
+        png_read_image(png_ptr, row_pointers);
+        png_read_end(png_ptr, NULL);
+
+        int ind = 0;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                uint8_t p = row_pointers[y][2*x];
+                bytes[ind++] = p;
+                bytes[ind++] = p;
+                bytes[ind++] = p;
+            }
+        }
+
+        free(tmp);
+    }
+    else if ( color_type == PNG_COLOR_TYPE_RGB_ALPHA ) {
+        uint8_t* tmp = (uint8_t*)malloc( width * height * 4 );
+        for (int i = 0; i < height; i++)
+            row_pointers[i] = &(tmp[i * 4 * width]);
+        png_read_image(png_ptr, row_pointers);
+        png_read_end(png_ptr, NULL);
+
+        int ind = 0;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                bytes[ind++] = row_pointers[y][4*x+0];
+                bytes[ind++] = row_pointers[y][4*x+1];
+                bytes[ind++] = row_pointers[y][4*x+2];
+            }
+        }
+
+        free(tmp);
+    }
+    else {
+        g_log.log(LL_ERROR, "loadImage: unknown PNG color_type: %d", color_type);
+    }
 
     free(row_pointers);
 
@@ -117,7 +168,28 @@ bool loadPNG(string filename, int width, int height, int planes, uint8_t* bytes)
 
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
-    //memset( bytes, 0, width * height * planes );
-
     return true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

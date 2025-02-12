@@ -88,9 +88,6 @@ bool script_saveImage(string filename)
     return savePNG(filename, b->width, b->height, 3, b->rgbData);
 }
 
-bool lastLoadedImageResult = false;
-string lastLoadedImageFilename = "";
-uint8_t* lastLoadedImageBuffer = NULL;
 
 bool script_loadImage(string filename)
 {
@@ -99,27 +96,32 @@ bool script_loadImage(string filename)
         ctx->buffers = new videoFrameBuffers_t();
     }
 
-    if ( filename == lastLoadedImageFilename ) {
-        if ( lastLoadedImageResult ) {
-            memcpy( ctx->buffers->rgbData, lastLoadedImageBuffer, ctx->buffers->width * ctx->buffers->height * 3 );
-            return true;
-        }
-        // if failed last time, allow a retry
+    if ( ctx->shouldTryImageLoad )
+        ctx->lastLoadImageResult = false; // invalidate last load
+
+    if ( (filename == ctx->lastLoadedImageFilename) && ctx->lastLoadImageResult ) {
+        memcpy( ctx->buffers->rgbData, ctx->lastLoadedImageBuffer, ctx->buffers->width * ctx->buffers->height * 3 );
+        return true;
     }
 
-    if ( ! lastLoadedImageBuffer ) {
-        lastLoadedImageBuffer = new uint8_t[ ctx->buffers->width * ctx->buffers->height * 3 ];
-        memset( lastLoadedImageBuffer, 0, ctx->buffers->width * ctx->buffers->height * 3 );
+    if ( ! ctx->shouldTryImageLoad )
+        return false;
+
+    ctx->shouldTryImageLoad = false;
+
+    if ( ! ctx->lastLoadedImageBuffer ) {
+        ctx->lastLoadedImageBuffer = new uint8_t[ ctx->buffers->width * ctx->buffers->height * 3 ];
+        memset( ctx->lastLoadedImageBuffer, 0, ctx->buffers->width * ctx->buffers->height * 3 );
     }
 
-    lastLoadedImageResult = loadPNG(filename, ctx->buffers->width, ctx->buffers->height, 3, lastLoadedImageBuffer);
+    ctx->lastLoadImageResult = loadPNG(filename, ctx->buffers->width, ctx->buffers->height, ctx->lastLoadedImageBuffer);
 
-    if ( lastLoadedImageResult )
-        lastLoadedImageFilename = filename;
+    if ( ctx->lastLoadImageResult )
+        ctx->lastLoadedImageFilename = filename;
     else
-        lastLoadedImageFilename = "";
+        ctx->lastLoadedImageFilename = "";
 
-    return lastLoadedImageResult;
+    return ctx->lastLoadImageResult;
 }
 
 
@@ -1205,16 +1207,17 @@ void script_flipFrame(int method)
 
 script_rotatedRect rr;
 
-script_rotatedRect* script_minAreaRectF(float lx, float ux, float ly, float uy) {
+/*script_rotatedRect* script_minAreaRectF(float ratioMin, float ratioMax, float minSideLength, float maxSideLength, float maxDistFromCenter) {
     return script_minAreaRect(lx, ux, ly, uy);
 }
 
 script_rotatedRect* script_minAreaRect_default() {
     return script_minAreaRect(-1, -1, -1, -1);
-}
+}*/
 
-script_rotatedRect* script_minAreaRect(int _lx, int _ux, int _ly, int _uy)
+script_rotatedRect* script_minAreaRect(float minRatio, float maxRatio, float minArea, float maxArea, float maxDistFromCenter)
 {
+    rr.valid = false;
     rr.angle = 0;
     rr.x = 0;
     rr.y = 0;
@@ -1228,15 +1231,15 @@ script_rotatedRect* script_minAreaRect(int _lx, int _ux, int _ly, int _uy)
 
     GETWINDOW;
 
-    // window override can only become smaller
-    if ( _lx != -1 && _lx > lx )
-        lx = _lx;
-    if ( _ly != -1 && _ly > ly )
-        ly = _ly;
-    if ( _ux != -1 && _ux < ux )
-        ux = _ux;
-    if ( _uy != -1 && _uy < uy )
-        uy = _uy;
+    // // window override can only become smaller
+    // if ( _lx != -1 && _lx > lx )
+    //     lx = _lx;
+    // if ( _ly != -1 && _ly > ly )
+    //     ly = _ly;
+    // if ( _ux != -1 && _ux < ux )
+    //     ux = _ux;
+    // if ( _uy != -1 && _uy < uy )
+    //     uy = _uy;
 
     if ( ((ux - lx) < 1) || ((uy - ly) < 1) )
         return &rr;
@@ -1407,6 +1410,35 @@ script_rotatedRect* script_minAreaRect(int _lx, int _ux, int _ly, int _uy)
     rr.y = s * mrx + c * mry;
     rr.w = bestWidth;
     rr.h = bestHeight;
+    rr.area = rr.w * rr.h;
+
+    // set valid property
+    float w = max(bestWidth, bestHeight);
+    float h = min(bestWidth, bestHeight);
+
+    rr.valid = w > 0 && h > 0;
+    if ( rr.valid ) {
+        float ratio = w / h;
+        if ( minRatio != -1 && ratio < minRatio )
+            rr.valid = false;
+        if ( maxRatio != -1 && ratio > maxRatio )
+            rr.valid = false;
+    }
+    if ( rr.valid ) {
+        if ( minArea != -1 && rr.area < minArea )
+            rr.valid = false;
+        if ( maxArea != -1 && rr.area > maxArea )
+            rr.valid = false;
+    }
+    if ( rr.valid ) {
+        if ( maxDistFromCenter != -1 ) {
+            float dx = rr.x - 320;
+            float dy = rr.y - 240;
+            float dist = sqrt(dx*dx + dy*dy);
+            if ( dist > maxDistFromCenter )
+                rr.valid = false;
+        }
+    }
 
     return &rr;
 }
