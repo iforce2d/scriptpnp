@@ -355,6 +355,8 @@ bool setupScriptEngine()
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void blur(int kernelSize)", asFUNCTION(script_blur), asCALL_CDECL);
     assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("void grow(float pixels = 1)", asFUNCTION(script_grow), asCALL_CDECL);
+    assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void rgbThreshold(int minRed, int maxRed, int minGreen, int maxGreen, int minBlue, int maxBlue)", asFUNCTION(script_rgbThreshold), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void findContour(int method = FC_ALL)", asFUNCTION(script_findContour), asCALL_CDECL);

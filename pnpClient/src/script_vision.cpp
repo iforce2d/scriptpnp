@@ -870,6 +870,104 @@ void script_blurF(float kernelSize)
     script_blur(kernelSize);
 }
 
+void script_grow(float pixls)
+{
+    int pixels = floor(pixls);
+
+    if ( abs(pixels) < 1 )
+        return;
+
+    GET_THREAD_CONTEXT_ELSE
+        return;
+
+    ensureGrayData(b);
+
+    bool grow = pixels > 0;
+
+    pixels = abs(pixels);
+
+    if ( pixels > 12 )
+        pixels = 12;
+
+    GETWINDOW;
+
+    memset(b->grayData, 0, b->width*b->height);
+
+    // don't go all the way to the edges for actual grow
+    int wlx = lx + pixels;
+    int wux = ux - pixels;
+    int wly = ly + pixels;
+    int wuy = uy - pixels;
+
+    if ( grow ) {
+        // grow can start with all black
+        memset(b->grayData, 0, b->width*b->height);
+    }
+    else {
+        // shrink needs to copy values from rgb, to make them zero later
+        for (int x = lx; x < ux; x++) {
+            for (int y = ly; y < uy; y++) {
+                int i = y*b->width+x;
+                if ( b->rgbData[3*i+0] )
+                    b->grayData[i] = 255;
+                else
+                    b->grayData[i] = 0;
+            }
+        }
+    }
+
+    float dSquared = pixels * pixels;
+
+    for (int x = wlx; x < wux; x++) {
+        for (int y = wly; y < wuy; y++) {
+            int i = y*b->width+x;
+
+            if ( grow ) {
+                if ( b->rgbData[3*i+0] ) { // using red only
+                    for (int xx = -pixels; xx <= pixels; xx++) {
+                        for (int yy = -pixels; yy <= pixels; yy++) {
+                            if ( (xx*xx + yy*yy) > dSquared )
+                                continue;
+                            int ii = (y+yy)*b->width+(x+xx);
+                            b->grayData[ii] = 255;
+                        }
+                    }
+                }
+            }
+            else { // shrink
+                if ( b->grayData[i] ) {
+                    for (int xx = -pixels; xx <= pixels; xx++) {
+                        for (int yy = -pixels; yy <= pixels; yy++) {
+                            if ( (xx*xx + yy*yy) > dSquared )
+                                continue;
+                            int ii = (y+yy)*b->width+(x+xx);
+                            if ( ! b->grayData[ii] ) {
+                                b->rgbData[3*i+0] = 0;
+                                b->rgbData[3*i+1] = 0;
+                                b->rgbData[3*i+2] = 0;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+    if ( grow ) { // shrink has already finalized rgbData
+        // copy grayData into rgbData
+        for (int x = lx; x < ux; x++) {
+            for (int y = ly; y < uy; y++) {
+                int i = y*b->width+x;
+                b->rgbData[3*i+0] = b->grayData[i];
+                b->rgbData[3*i+1] = b->grayData[i];
+                b->rgbData[3*i+2] = b->grayData[i];
+            }
+        }
+    }
+}
+
 void script_rgbThreshold(int lr, int ur, int lg, int ug, int lb, int ub)
 {
     GET_THREAD_CONTEXT_ELSE

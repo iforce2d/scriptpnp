@@ -134,6 +134,7 @@ void script_setVisionWindowSizeF(float windowSize);
 class CScriptArray* script_quickblob_default();
 class CScriptArray* script_quickblob(int color, int minpixels, int maxpixels, int minwidth, int maxwidth);
 void script_blur(int kernelSize);
+void script_grow(float pixls);
 void script_rgbThreshold(int lr, int ur, int lg, int ug, int lb, int ub);
 void script_hsvThreshold(int mh, int hRange, int ls, int us, int lv, int uv);
 void script_findContour(int method);
