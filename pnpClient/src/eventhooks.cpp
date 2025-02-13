@@ -38,6 +38,7 @@ void saveEventHooksToDB()
         string sql = "insert into internal_eventhook (id, type, label, entryfunction, preview) values ("+idStr+",'functionkey','"+string(label)+"','"+ info.entryFunction +"',"+to_string(info.preview)+")"
             + " on CONFLICT do UPDATE set label = '"+ label +"', entryfunction = '"+ info.entryFunction +"', preview = "+to_string(info.preview);
         executeDatabaseStatement(sql, NULL, errMsg);
+        info.dirty = false;
     }
 
     int numRows = (int)customButtonHookInfos.size();
@@ -192,6 +193,8 @@ bool showFunctionKeyHooks()
 
         for (int i = 0; i < NUM_FUNCTION_KEY_HOOKS; i++) {
 
+            bool wasChanged = false;
+
             functionKeyHookInfo_t &info = functionKeyHookInfos[i];
 
             ImGui::TableNextRow();
@@ -205,9 +208,20 @@ bool showFunctionKeyHooks()
             sprintf(buf, "##fnkeyentry%d", i+1);
             ImGui::InputText(buf, info.entryFunction, MAX_ENTRY_FUNCTION_LEN-1, ImGuiInputTextFlags_CharsNoBlank);
 
+            if ( ImGui::IsItemEdited() )
+                wasChanged = true;
+
             ImGui::TableSetColumnIndex(2);
             sprintf(buf, "Preview##fnkeypv%d", i);
             ImGui::Checkbox(buf, &info.preview);
+
+            if ( ImGui::IsItemEdited() )
+                wasChanged = true;
+
+            if ( wasChanged ) {
+                info.dirty = true;
+                somethingChanged = true;
+            }
 
         }
         ImGui::EndTable();
