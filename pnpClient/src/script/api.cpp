@@ -21,6 +21,7 @@
 #include "net_requester.h"
 #include "overrides.h"
 #include "util.h"
+#include "plangroup.h"
 
 #ifndef DEGTORAD
 #define DEGTORAD 0.01745329252
@@ -762,8 +763,10 @@ void script_wait(int millis)
 {
     if ( millis < 1 )
         return;
-     if ( getActivePreviewOnly() )
-         return;
+    if ( getActivePreviewOnly() ) {
+        planGroup_preview.addWaitTime(millis);
+        return;
+    }
     std::this_thread::sleep_for( chrono::milliseconds(millis) );
 }
 

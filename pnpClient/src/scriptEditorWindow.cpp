@@ -77,6 +77,9 @@ void ScriptEditorWindow::showOutputPane()
     if ( currentlyRunningScriptThread() )
         ImGui::EndDisabled();
 
+    if ( planGroup_preview.getType() == 1 )
+        ImGui::Text("Traverse time: %.2f s", planGroup_preview.getTraverseTime());
+
     log.drawLogContent();
 }
 

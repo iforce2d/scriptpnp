@@ -9,6 +9,8 @@ using namespace scv;
 PlanGroup::PlanGroup() {
     traversal_planIndex = 0;
     traversal_planTime = 0;
+    scriptWaitTime = 0;
+    type = -1;
 }
 
 PlanGroup::~PlanGroup()
@@ -23,6 +25,15 @@ void PlanGroup::clear()
         delete p;
     }
     plans.clear();
+    scriptWaitTime = 0;
+}
+
+void PlanGroup::setType(int t) {
+    type = t;
+}
+
+int PlanGroup::getType() {
+    return type;
 }
 
 extern vec3 lastActualPos;
@@ -74,6 +85,11 @@ void PlanGroup::calculateMovesForLastPlan()
     p->calculateMoves();
 }
 
+void PlanGroup::addWaitTime(int millis)
+{
+    scriptWaitTime += millis;
+}
+
 void PlanGroup::resetTraverse()
 {
     traversal_planIndex = 0;
@@ -106,5 +122,6 @@ float PlanGroup::getTraverseTime()
     float t = 0;
     for (planner *p : plans)
         t += p->getTraverseTime();
+    t += scriptWaitTime * 0.001f;
     return t;
 }

@@ -588,8 +588,12 @@ void CodeEditorWindow::render()
         if ( ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) ) {
             if ( ctrlOJustPressed )
                 doOpen = true;
-            if ( ctrlSJustPressed )
-                doSave = true;
+            if ( ctrlSJustPressed ) {
+                if ( currentDocument->hasOwnFile )
+                    doSave = true;
+                else
+                    doSaveAs = true;
+            }
         }
 
         showMenuBar( doOpen, doSave, doSaveAs );

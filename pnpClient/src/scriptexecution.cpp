@@ -185,6 +185,7 @@ bool runScript(string moduleName, string funcName, bool previewOnly, void *codeE
         return false;
 
     planGroup_preview.clear();
+    planGroup_preview.setType(1);
     planGroup_run.clear();
     resetTraversePointsAndEvents();
 

@@ -29,8 +29,6 @@ bool doActualRun(vector<string> &lines)
 {
     g_log.log(LL_DEBUG, "doActualRun");
 
-    asIScriptContext *ctx = getCurrentScriptContext();
-
     while ( waitingForPreviousActualRun ) {
 
         if ( ! currentlyRunningScriptThread() ) {

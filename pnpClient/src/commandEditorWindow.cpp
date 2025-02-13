@@ -148,7 +148,8 @@ void CommandEditorWindow::showOutputPane()
     if ( currentlyRunningScriptThread() )
         ImGui::EndDisabled();
 
-    ImGui::Text("Traverse time: %.2f s", planGroup_preview.getTraverseTime());
+    if ( planGroup_preview.getType() == 0 )
+        ImGui::Text("Traverse time: %.2f s", planGroup_preview.getTraverseTime());
 
     log.drawLogContent();
 }
@@ -206,6 +207,7 @@ bool CommandEditorWindow::runCommandList(bool previewOnly)
         if ( previewOnly ) {
             setPreviewMoveLimitsFromCurrentActual();
             planGroup_preview.clear();
+            planGroup_preview.setType(0);
             planner* plan = planGroup_preview.addPlan();
             loadCommandsPreview(program, plan);
 
