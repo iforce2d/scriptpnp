@@ -23,13 +23,14 @@ extern ImFont* font_sourceCodePro;
 //#define OPEN_DIALOG_ID      "Open..."
 #define SAVEAS_DIALOG_ID    "Save as..."
 #define UNSAVED_DIALOG_ID   "Unsaved document"
+#define DELETE_DOCUMENT_ID   "Delete document"
 
 // these are for modal dialogs so should be ok as static?
 static string loadDbFileErrorMsg;
 static string saveDbFileErrorMsg;
 static bool okayToOverwriteExisting = false;
 static bool doRefocusOnInputAfterFileSelectFail = false;
-static CodeEditorDocument* docToClose = NULL;
+static CodeEditorDocument* docToCloseOrDelete = NULL; // only used during confirmation dialog
 static vector<string> openableFilenames;
 static vector<string> alreadyOpenedFilenames;
 static int selectedOpenDocumentIndex = -1;
@@ -107,6 +108,11 @@ void CodeEditorWindow::doExport() {
     }
 }
 
+void CodeEditorWindow::doDelete() {
+
+
+}
+
 bool saveDiskFile(CodeEditorDocument* doc, std::string path)
 {
     if ( path.empty() ) {
@@ -177,7 +183,24 @@ bool saveDBFile(CodeEditorDocument* doc, string path, bool allowOverwriteExistin
     return true;
 }
 
-void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs)
+bool deleteDBFile(CodeEditorDocument* doc)
+{
+    if ( ! doc ) {
+        g_log.log(LL_ERROR, "Can't deleteDBFile for non-existent document");
+        return false;
+    }
+
+    std::string errMsg;
+    if( ! deleteExistingDBFile(doc->fileType, doc->filename, errMsg) ) {
+        g_log.log(LL_DEBUG, "Failed to delete DB file '%s' : %s", doc->filename.c_str(), errMsg.c_str());
+        return false;
+    }
+
+    g_log.log(LL_DEBUG, "Deleted DB file: '%s'", doc->filename.c_str());
+    return true;
+}
+
+void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete)
 {
     if (ImGui::BeginMenuBar())
     {
@@ -205,6 +228,11 @@ void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs)
             if (ImGui::MenuItem("Export", NULL, (bool*)NULL, currentDocument != NULL ))
             {
                 doExport();
+            }
+
+            if (ImGui::MenuItem("Delete", NULL, (bool*)NULL, currentDocument && currentDocument->hasOwnFile))
+            {
+                doDelete = true;
             }
 
             ImGui::EndMenu();
@@ -372,7 +400,7 @@ void CodeEditorWindow::showSaveAsDialogPopup(bool openingNow)
     }
 }
 
-void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfirmClose, CodeEditorDocument* &docToClose)
+void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfirmClose, CodeEditorDocument* &_docToCloseOrDelete)
 {
     char tabBarName[128];
     snprintf(tabBarName, sizeof(tabBarName), "TabBar##%d", windowIndex);
@@ -391,7 +419,6 @@ void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfir
                 activeDoc->dirty |= activeDoc->editor.IsTextChanged();
 
                 char tabName[128];
-                //snprintf(tabName, sizeof(tabName), "%s###%d_%d", activeDoc->filename.c_str(), windowIndex, i);
                 snprintf(tabName, sizeof(tabName), "%s", activeDoc->filename.c_str());
 
                 bool isOpen = true;
@@ -410,7 +437,6 @@ void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfir
                     if ( currentFont )
                         ImGui::PushFont(currentFont);
                     preRenderDoc(activeDoc);
-                    //string intstr = to_string(i);
                     activeDoc->editor.Render( "asdfasfasdf" );
                     if ( currentFont )
                         ImGui::PopFont();
@@ -421,10 +447,9 @@ void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfir
                 if ( ! isOpen ) {
                     if ( activeDoc->dirty ) {
                         doConfirmClose = true;
-                        docToClose = activeDoc;
+                        _docToCloseOrDelete = activeDoc;
                     }
                     else {
-                        //onDocumentClosed(activeDoc);
                         activeDoc->shouldClose = true;
                     }
                 }
@@ -449,9 +474,8 @@ void CodeEditorWindow::showConfirmCloseDialog(CodeEditorDocument *doc)
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.9f, 0.3f, 1.0f));
         if ( ImGui::Button("Yes", ImVec2(120, 0))) {
-            //onDocumentClosed(docToClose);
-            docToClose->shouldClose = true;
-            docToClose = NULL;
+            docToCloseOrDelete->shouldClose = true;
+            docToCloseOrDelete = NULL;
             ImGui::CloseCurrentPopup();
         }
         ImGui::PopStyleColor(3);
@@ -461,6 +485,37 @@ void CodeEditorWindow::showConfirmCloseDialog(CodeEditorDocument *doc)
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
         if (ImGui::Button("No", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::PopStyleColor(3);
+
+        ImGui::EndPopup();
+    }
+}
+
+void CodeEditorWindow::showConfirmDeleteDialog(CodeEditorDocument *doc)
+{
+    ImVec2 center = ImGui::GetMainViewport()->GetWorkCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal(DELETE_DOCUMENT_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Document '%s' will be PERMANENTLY deleted!", doc->filename.c_str());
+
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.9f, 0.3f, 1.0f));
+        if ( ImGui::Button("Delete", ImVec2(120, 0))) {
+            docToCloseOrDelete->shouldDelete = true;
+            docToCloseOrDelete = NULL;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::PopStyleColor(3);
+
+        ImGui::SameLine();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::PopStyleColor(3);
@@ -584,6 +639,7 @@ void CodeEditorWindow::render()
         bool doOpen = false;
         bool doSave = false;
         bool doSaveAs = false;
+        bool doDelete = false;
 
         if ( ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) ) {
             if ( ctrlOJustPressed )
@@ -596,7 +652,7 @@ void CodeEditorWindow::render()
             }
         }
 
-        showMenuBar( doOpen, doSave, doSaveAs );
+        showMenuBar( doOpen, doSave, doSaveAs, doDelete );
 
         if ( doOpen ) {
             loadDbFileErrorMsg.clear();
@@ -643,7 +699,7 @@ void CodeEditorWindow::render()
                     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0);
                     ImGui::BeginChild("codeView", ImVec2(0,area.y*0.66), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeY);
                     {
-                        showTabBar(doConfirmClose, docToClose);
+                        showTabBar(doConfirmClose, docToCloseOrDelete);
                     }
                     ImGui::EndChild();
                     ImGui::PopStyleVar();
@@ -662,23 +718,28 @@ void CodeEditorWindow::render()
             else {
                 ImGui::BeginChild("pane", area);
                 {
-                    showTabBar(doConfirmClose, docToClose);
+                    showTabBar(doConfirmClose, docToCloseOrDelete);
                 }
                 ImGui::EndChild();
             }
         }
 
-        if ( doConfirmClose ) {
-            if ( docToClose->dirty ) {
+        if ( doDelete ) {
+            docToCloseOrDelete = currentDocument;
+            ImGui::OpenPopup(DELETE_DOCUMENT_ID);
+        }
+        else if ( doConfirmClose ) {
+            if ( docToCloseOrDelete->dirty ) {
                 ImGui::OpenPopup(UNSAVED_DIALOG_ID);
             }
             else {
-                docToClose->shouldClose = true;
-                docToClose = NULL;
+                docToCloseOrDelete->shouldClose = true;
+                docToCloseOrDelete = NULL;
             }
         }
 
-        showConfirmCloseDialog(docToClose);
+        showConfirmCloseDialog(docToCloseOrDelete);
+        showConfirmDeleteDialog(docToCloseOrDelete);
 
         if ( currentDocument ) {
             auto cpos = currentDocument->editor.GetCursorPosition();

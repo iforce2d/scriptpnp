@@ -50,15 +50,17 @@ public:
 
     void doImport();
     void doExport();
+    void doDelete();
 
     //bool saveDBFile(std::string path, bool allowOverwriteExisting, std::string &errMsg);
     //bool loadDBFile(std::string path, std::string &errMsg);
 
-    void showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs);
+    void showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete);
     void showOpenDialogPopup(bool openingNow);
     void showSaveAsDialogPopup(bool openingNow);
     void showTabBar(/*CodeEditorDocument *doc,*/ bool &doConfirmClose, CodeEditorDocument *&docToClose);
     void showConfirmCloseDialog(CodeEditorDocument* doc);
+    void showConfirmDeleteDialog(CodeEditorDocument* doc);
 
     void showCompileErrorInfos();
     virtual void setupErrorMarkers(CodeEditorDocument *whichDoc);
@@ -79,5 +81,7 @@ bool saveDiskFile(CodeEditorDocument* doc, std::string path);
 
 bool saveDBFile(CodeEditorDocument* doc, std::string path, bool allowOverwriteExisting, std::string &errMsg);
 void gotoCodeCompileError(CodeEditorWindow* w, errorGotoInfo &info);
+
+bool deleteDBFile(CodeEditorDocument* doc);
 
 #endif // CODE_EDITOR_WINDOW_H

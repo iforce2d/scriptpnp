@@ -20,6 +20,8 @@ bool executeDatabaseStatement_generic(std::string statement, std::vector< std::v
 bool saveTextToDBFile(std::string &text, std::string dbFileType, std::string path, bool allowOverwriteExisting, std::string &errMsg);
 bool loadTextFromDBFile(std::string &text, std::string dbFileType, std::string path, std::string &errMsg);
 
+bool deleteExistingDBFile(std::string dbFileType, std::string path, std::string &errMsg);
+
 int getAllPathsOfTypeFromDBFile(std::vector<std::string> &paths, std::string dbFileType, std::string &errMsg);
 int loadAllTextOfTypeFromDBFile(std::vector<dbTextFileInfo> &entries, std::string dbFileType, std::vector<std::string> &excludePaths, std::string &errMsg);
 

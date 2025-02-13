@@ -1703,6 +1703,12 @@ int main(int, char**)
 
         for (int i = 0; i < (int)commandDocuments.size(); i++) {
             CodeEditorDocument* doc = commandDocuments[i];
+
+            if ( doc->shouldDelete ) {
+                doc->shouldClose = true;
+                deleteDBFile(doc);
+            }
+
             if ( doc->shouldClose ) {
                 for (CodeEditorWindow* w : commandEditorWindows)
                     w->onDocumentClosed(doc);
@@ -1714,6 +1720,12 @@ int main(int, char**)
 
         for (int i = 0; i < (int)scriptDocuments.size(); i++) {
             CodeEditorDocument* doc = scriptDocuments[i];
+
+            if ( doc->shouldDelete ) {
+                doc->shouldClose = true;
+                deleteDBFile(doc);
+            }
+
             if ( doc->shouldClose ) {
                 for (CodeEditorWindow* w : scriptEditorWindows)
                     w->onDocumentClosed(doc);

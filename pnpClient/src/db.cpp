@@ -194,6 +194,38 @@ bool saveTextToDBFile(string &text, string dbFileType, string path, bool allowOv
     return ok;
 }
 
+bool deleteExistingDBFile(string dbFileType, string path, string &errMsg)
+{
+    if ( ! db ) {
+        g_log.log(LL_ERROR, "deleteExistingDBFile called while no database open");
+        errMsg = "No database open";
+        return false;
+    }
+
+    bool ok = false;
+
+    string insertStr = "DELETE FROM internal_file WHERE type = '"+ dbFileType +"' and path = '"+ path +"'";
+
+    sqlite3_stmt *stmt = NULL;
+
+    int rc = sqlite3_prepare_v2( db, insertStr.c_str(), -1, &stmt, NULL );
+    if (rc != SQLITE_OK) {
+        errMsg = sqlite3_errmsg(db);
+        g_log.log(LL_ERROR, "deleteExistingDBFile sqlite3_prepare_v2 failed: %s", errMsg.c_str());
+    } else {
+        rc = sqlite3_step(stmt);
+        if (rc != SQLITE_DONE) {
+            errMsg = sqlite3_errmsg(db);
+            g_log.log(LL_ERROR, "deleteExistingDBFile sqlite3_step failed: %s", errMsg.c_str());
+        }
+        else
+            ok = true;
+    }
+
+    sqlite3_finalize(stmt);
+
+    return ok;
+}
 
 bool loadTextFromDBFile(std::string &text, string dbFileType, std::string path, std::string &errMsg)
 {

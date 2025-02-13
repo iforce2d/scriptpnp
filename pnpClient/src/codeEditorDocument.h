@@ -20,6 +20,7 @@ public:
     bool hasOwnFile;
     bool dirty;
     bool shouldClose;
+    bool shouldDelete;
     TextEditor::ErrorMarkers markers;
     TextEditor::Breakpoints breakpoints;
 

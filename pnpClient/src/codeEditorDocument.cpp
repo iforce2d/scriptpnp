@@ -8,6 +8,7 @@ CodeEditorDocument::CodeEditorDocument()
     hasOwnFile = false;
     dirty = false;
     shouldClose = false;
+    shouldDelete = false;
     //editor = TextEditor();
     editor.SetPalette(myPalette);
 }
