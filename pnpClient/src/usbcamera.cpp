@@ -1,5 +1,10 @@
 ﻿
-//#define LIBUVC_HAS_JPEG
+#ifndef __APPLE__
+// Rather annoyingly, this needs to be included before libuvc.h even though
+// the lib was configured with JPEG support?!? Seems like on MacOS it figures
+// things out better.
+    #define LIBUVC_HAS_JPEG
+#endif
 
 #include <unistd.h>
 #include <atomic>
