@@ -13,11 +13,11 @@ sudo apt install cmake autogen libtool pkg-config libglfw3-dev libglew-dev libus
 
 Install packages for OSX
 ------------------------
-brew install autoconf automake libtool (probably more that I already had and didn't know about...)
+brew install autoconf automake libtool mysql-client (probably more that I already had and didn't know about...)
 
 
 Build steps for Fedora and Ubuntu are shown below
-For OSX, probably need to change /usr prefixes to /usr/local, and do "export nproc=4" first to limit concurrent compilations.
+For MacOS, probably need to change /usr prefixes to /usr/local, and limit concurrent compilations explicitly, eg. make -j4.
 ----------------------
 
 cd pnpClient
