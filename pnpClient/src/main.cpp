@@ -458,11 +458,6 @@ void backgroundRenderCallback(const ImDrawList* parent_list, const ImDrawCmd* cm
     traverseFeedback_t traverseFeedback;
     planGroup_preview.advanceTraverse( animAdvance, animSpeedScale, &animLoc, &tmpV, animRots, &traverseFeedback );
 
-    if ( animRots[0] != 0 ) {
-        int adf = 4;
-        adf++;
-    }
-
     enableModelRenderState();
 
     float scale = 1000;
@@ -991,7 +986,7 @@ int main(int, char**)
     serverHostname[0] = 0;
 
     mainThreadId = pthread_self();
-    g_log.log(LL_INFO, "Main thread id: %lu", mainThreadId);
+    //g_log.log(LL_INFO, "Main thread id: %lu", mainThreadId);
 
     std::chrono::steady_clock::time_point appStartTime = std::chrono::steady_clock::now();
 
@@ -1185,10 +1180,10 @@ int main(int, char**)
         file.close();
     }
 
-    bool loadedCommandDoc = false;
+    //bool loadedCommandDoc = false;
     for (string path : openCommandDocumentPaths) {
         string errMsg;
-        loadedCommandDoc |= loadDBFile(&commandDocuments, "command list", path, errMsg);
+        loadDBFile(&commandDocuments, "command list", path, errMsg);
     }
 
     //bool loadedScriptDoc = false;

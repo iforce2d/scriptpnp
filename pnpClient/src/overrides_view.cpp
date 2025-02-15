@@ -14,15 +14,19 @@ int buttonDifferentiatorIndex = 0;
 char buttonDifferentiatorBuffer[128];
 
 // ignore annoying GCC warning about not checking result of snprintf
+#ifndef __APPLE__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
 
 char* bd(const char* str) {
     snprintf(buttonDifferentiatorBuffer, sizeof(buttonDifferentiatorBuffer), "%s##%d", str, buttonDifferentiatorIndex++);
     return buttonDifferentiatorBuffer;
 }
 
+#ifndef __APPLE__
 #pragma GCC diagnostic pop
+#endif
 
 const char* operandNames[] = {
     "motion axis",
@@ -84,7 +88,7 @@ void showOverrideEdit_condition(OverrideConfig &config, int index) {
     ImGui::SameLine();
     if ( config.condition.ui_operandIndex == -1 ) {
         ImGui::BeginDisabled();
-        if (ImGui::Button(bd("<axis>")));
+        ImGui::Button(bd("<axis>"));
         ImGui::EndDisabled();
     }
     else if ( config.condition.ui_operandIndex == ONI_MOTION_AXIS ) { // motion axis
@@ -145,7 +149,7 @@ void showOverrideEdit_condition(OverrideConfig &config, int index) {
     ImGui::SameLine();
     if ( config.condition.ui_operandIndex == -1 ) {
         ImGui::BeginDisabled();
-        if (ImGui::Button(bd("<comparison>")));
+        ImGui::Button(bd("<comparison>"));
         ImGui::EndDisabled();
     }
     else {
@@ -206,7 +210,7 @@ void showEditActions( vector<overrideAction_t> &actions, int configIndex, int ac
         ImGui::SameLine();
         if ( action.ui_operandIndex == -1 ) {
             ImGui::BeginDisabled();
-            if (ImGui::Button(bd("<axis>")));
+            ImGui::Button(bd("<axis>"));
             ImGui::EndDisabled();
         }
         else {

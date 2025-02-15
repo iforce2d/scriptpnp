@@ -669,7 +669,7 @@ void TextEditor::Render()
 
 			auto& line = mLines[lineNo];
 			longest = std::max(mTextStart + TextDistanceToLineStart(Coordinates(lineNo, (int)line.size())), longest);
-			auto columnNo = 0;
+			//auto columnNo = 0;
 			Coordinates lineStartCoord(lineNo, 0);
 			Coordinates lineEndCoord(lineNo, (int)line.size());
 
@@ -794,7 +794,7 @@ void TextEditor::Render()
 					bufferOffset.x = (1.0f * fontScale + std::floor((1.0f + bufferOffset.x)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
 				else
 					AppendBuffer(buffer, glyph.mChar, 0);
-				++columnNo;
+				//++columnNo;
 			}
 
 			if (!buffer.empty())

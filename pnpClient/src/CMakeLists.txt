@@ -110,7 +110,8 @@ pkg_check_modules(MYSQL REQUIRED mysqlclient)
 
 
 if(APPLE)
-    target_link_libraries(pnpClient -I/usr/local/include -I/opt/local/include -I/opt/homebrew/include "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo" -L/usr/local/lib -L/opt/local/lib -L/opt/homebrew/lib -lglfw -lzmq /usr/local/lib/libuvc.a -lsqlite3 -ljpeg -lpng -lserialport -lZXing -lusb-1.0 libangelscript.a /usr/local/lib/libassimp.a ${CMAKE_SOURCE_DIR}/../nativefiledialog/build/lib/Release/x64/libnfd.a -lz )
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security -Wno-deprecated-declarations")
+    target_link_libraries(pnpClient -I/usr/local/include -I/opt/local/include -I/opt/homebrew/include "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo" -L/usr/local/lib -L/opt/local/lib -L/opt/homebrew/lib -lglfw -lzmq /usr/local/lib/libuvc.a -lsqlite3 -ljpeg -lpng -lserialport -lZXing -lusb-1.0 libangelscript.a /usr/local/lib/libassimp.a ${CMAKE_SOURCE_DIR}/../nativefiledialog/build/lib/Release/x64/libnfd.a ${GTK_LDFLAGS} -lz )
 else()
     target_link_libraries(pnpClient ${GLFW3_LDFLAGS} libangelscript.a -lGL -lGLU -lzmq -lpthread -lassimp -luvc -lsqlite3 -lpng -lserialport -lZXing ${CMAKE_SOURCE_DIR}/../nativefiledialog/build/lib/Release/x64/libnfd.a ${GTK_LDFLAGS} ${MYSQL_LDFLAGS} )
 endif()

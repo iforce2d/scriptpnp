@@ -146,7 +146,7 @@ bool parseInt(string& s, int* b) {
     if ( s[0] == c ) {                  \
         s.erase(s.begin());             \
         if ( ! parseFloat(s, &f, &bf) ) \
-            return NULL;                \
+            return false;               \
     }
 
 struct fourFloats {
@@ -261,7 +261,7 @@ bool parseNFloats(string &s, const char* labels, float* f, int numRequired) {
                 foundValidLabel = true;
                 s.erase(s.begin());
                 if ( ! parseFloat(s, &f[i], &dummy) )
-                    return NULL;
+                    return false;
             }
         }
 

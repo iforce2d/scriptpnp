@@ -248,7 +248,7 @@ bool compileScript(string moduleName, string funcName, compiledScript_t &compile
         if ( ! addScriptSection(moduleName, d->filename, d->editor.GetText()) ) {
             g_log.log(LL_ERROR, "addScriptSection failed for '%s'", d->filename.c_str());
             discardScriptModule(mod);
-            return NULL;
+            return false;
         }
     }
 
@@ -259,7 +259,7 @@ bool compileScript(string moduleName, string funcName, compiledScript_t &compile
         if ( ! addScriptSection(moduleName, info.path, info.text) ) {
             g_log.log(LL_ERROR, "addScriptSection failed for '%s'", info.path.c_str());
             discardScriptModule(mod);
-            return NULL;
+            return false;
         }
     }
 
@@ -271,7 +271,7 @@ bool compileScript(string moduleName, string funcName, compiledScript_t &compile
     if  ( ! ok ) {
         g_log.log(LL_SCRIPT_ERROR, "buildScriptModule failed for module: %s", moduleName.c_str());
         discardScriptModule(mod);
-        return NULL;
+        return false;
     }
 
     // string funcName = entryFunction;
@@ -287,7 +287,7 @@ bool compileScript(string moduleName, string funcName, compiledScript_t &compile
             w->log.log(LL_ERROR, NULL, 0, "[%s] Could not find entry point '%s'", logPrefixArray[LL_ERROR], funcName.c_str());
 
         discardScriptModule(mod);
-        return NULL;
+        return false;
     }
 
     compiled.mod = mod;

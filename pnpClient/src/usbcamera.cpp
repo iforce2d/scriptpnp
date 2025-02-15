@@ -1,5 +1,5 @@
 ﻿
-#define LIBUVC_HAS_JPEG
+//#define LIBUVC_HAS_JPEG
 
 #include <unistd.h>
 #include <atomic>
@@ -28,14 +28,19 @@ static int controlDifferentiatorIndex = 0;
 static char controlDifferentiatorBuffer[128];
 
 // ignore annoying GCC warning about not checking result of snprintf
+#ifndef __APPLE__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
 
 static char* cd(const char* str) {
     snprintf(controlDifferentiatorBuffer, sizeof(controlDifferentiatorBuffer), "%s##%d", str, controlDifferentiatorIndex++);
     return controlDifferentiatorBuffer;
 }
 
+#ifndef __APPLE__
+#pragma GCC diagnostic pop
+#endif
 
 vector<usbCameraInfo_t*> usbCameraInfos;
 

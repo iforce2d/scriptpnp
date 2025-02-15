@@ -911,7 +911,7 @@ int script_getProbingResult()
     case PR_NONE:                           return script_MR_NONE;
     case PR_SUCCESS:                        return script_MR_SUCCESS;
     case PR_FAIL_CONFIG:                    return script_MR_FAIL_CONFIG;
-    case TR_FAIL_NOT_HOMED:                 return script_MR_FAIL_NOT_HOMED;
+    case PR_FAIL_NOT_HOMED:                 return script_MR_FAIL_NOT_HOMED;
     case PR_FAIL_NOT_TRIGGERED:             return script_MR_FAIL_NOT_TRIGGERED;
     case PR_FAIL_ALREADY_TRIGGERED:         return script_MR_FAIL_LIMIT_TRIGGERED;
     }
@@ -1187,10 +1187,6 @@ script_vec3 script_vec3::rotatedBy(float degrees)
     ret.x = c * x - s * y;
     ret.y = s * x + c * y;
     ret.z = z;
-    if ( ret.x > 50 ) {
-        int asdf = 0;
-        asdf++;
-    }
     return ret;
 }
 

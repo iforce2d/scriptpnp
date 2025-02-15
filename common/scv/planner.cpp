@@ -474,12 +474,12 @@ void planner::calculateSchedules() {
 
         lastMoveHadNoBlend = false;
 
-        scv_float rampDuration0 = m0.segments[0].duration + m0.segments[1].duration;
-        scv_float rampDuration1 = m1.segments[0].duration + m1.segments[1].duration;
-        if ( m0.segments.size() == 7 )
-            rampDuration0 += m0.segments[2].duration;
-        if ( m1.segments.size() == 7 )
-            rampDuration1 += m1.segments[2].duration;
+        //scv_float rampDuration0 = m0.segments[0].duration + m0.segments[1].duration;
+        //scv_float rampDuration1 = m1.segments[0].duration + m1.segments[1].duration;
+        //if ( m0.segments.size() == 7 )
+        //    rampDuration0 += m0.segments[2].duration;
+        //if ( m1.segments.size() == 7 )
+        //    rampDuration1 += m1.segments[2].duration;
 
         // Use 0.49 here instead of 0.5, because we absolutely must not blend more than two moves at a time.
         // With an overlap of 0.5, it is theoretically possible that three moves could be blended together.
@@ -1458,20 +1458,10 @@ void planner::blendCorner(move& m0, move& m1, bool isFirst, bool isLast)
     float linear0Len = (startPoint - seg0.pos).Length();
     seg0.duration = linear0Len / seg0.vel.Length();
 
-    if ( seg0.duration > 1000 ) {
-        int adsf = 3;
-        adsf ++;
-    }
-
     // remove first part of linear segment of original second line
     float linear1Len = (seg2.pos - endPoint).Length();
     seg1.duration = linear1Len / seg1.vel.Length();
     seg1.pos = endPoint;
-
-    if ( seg1.duration > 1000 ) {
-        int adsf = 3;
-        adsf ++;
-    }
 
     markSkippedSegments(m0, 0);
     markSkippedSegments(m1, 1);
@@ -1718,10 +1708,6 @@ void planner::collateSegments()
                     float delay = endTime - totalDuration;
                     if ( delay > extraDelay ) {
                         extraDelay = delay;
-                        if ( extraDelay > 1000 ) {
-                            int asdf = 2;
-                            asdf++;
-                        }
                     }
                 }
             }

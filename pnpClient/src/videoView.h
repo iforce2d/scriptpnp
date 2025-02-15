@@ -18,8 +18,8 @@ public:
     void updateImageData(uint8_t* imgData);
 
     virtual int getLeadingSpace() { return 0; }
-    void show(const char *title, class usbCameraInfo_t* info);
-    virtual void showLeadingItems(class usbCameraInfo_t* info) {}
+    void show(const char *title, struct usbCameraInfo_t* info);
+    virtual void showLeadingItems(struct usbCameraInfo_t* info) {}
     virtual void drawOtherStuff(ImVec2 imgPos, float scale, usbCameraInfo_t* info) {}
 };
 

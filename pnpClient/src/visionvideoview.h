@@ -6,7 +6,7 @@
 
 class VisionVideoView : public VideoView
 {
-    class usbCameraInfo_t* cameraInfo;
+    struct usbCameraInfo_t* cameraInfo;
     bool continuousUpdate;
     char entryFunction[128];
     compiledScript_t compiled;
@@ -15,10 +15,10 @@ class VisionVideoView : public VideoView
 
 public:
     VisionVideoView();
-    void setCameraInfo(class usbCameraInfo_t* info);
+    void setCameraInfo(struct usbCameraInfo_t* info);
 
     int getLeadingSpace();
-    void showLeadingItems(class usbCameraInfo_t* info);
+    void showLeadingItems(struct usbCameraInfo_t* info);
 
     void prepareFunction();
     void runVision();

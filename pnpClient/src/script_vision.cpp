@@ -1580,8 +1580,8 @@ CScriptArray* script_findCircles(float diameter) {
 
     uint32_t highestVote = 0;
 
-    uint32_t totalCirclePixels = 0;
-    int samplesPerCircle = 0;
+    //uint32_t totalCirclePixels = 0;
+    //int samplesPerCircle = 0;
 
     for (int y = ly; y < uy; y++) {
         for (int x = lx; x < ux; x++) {
@@ -1591,7 +1591,7 @@ CScriptArray* script_findCircles(float diameter) {
             if ( ! b->grayData[i] )
                 continue;
 
-            samplesPerCircle = 0;
+            //samplesPerCircle = 0;
 
             int lastCx = -1;
             int lastCy = -1;
@@ -1604,12 +1604,12 @@ CScriptArray* script_findCircles(float diameter) {
                 if ( cx == lastCx && cy == lastCy )
                     continue;
 
-                samplesPerCircle++;
+                //samplesPerCircle++;
 
                 if ( cx < 0 || cx > b->width-1 || cy < 0 || cy > b->height-1 )
                     continue;
 
-                totalCirclePixels++;
+                //totalCirclePixels++;
 
                 int ci = cy*b->width+cx;
 
