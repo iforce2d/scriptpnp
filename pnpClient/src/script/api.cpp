@@ -712,7 +712,7 @@ bool script_runCommandList_dict(std::string filename, void *d)
                 g_log.log(LL_WARN, "Ignoring dictionary entry '%s'", keyName.c_str());
             else {
                 char buf[64];
-                sprintf(buf, "%g", val); // omit trailing zeroes
+                sprintf(buf, "%.10g", val); // omit trailing zeroes
                 subs[keyName] = string(buf);
             }
         }
@@ -744,6 +744,10 @@ bool script_runCommandList_dict(std::string filename, void *d)
             string val = it->second;
             strReplaceAll( line, key, val );
         }
+    }
+
+    for (string &line : lines ) {
+        g_log.log(LL_DEBUG, "  %s", line.c_str());
     }
 
     setActiveCommandListPath(filename);

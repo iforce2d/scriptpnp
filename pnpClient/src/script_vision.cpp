@@ -968,12 +968,14 @@ void script_grow(float pixls)
     }
 }
 
-void script_rgbThreshold(int lr, int ur, int lg, int ug, int lb, int ub)
+int script_rgbThreshold(int lr, int ur, int lg, int ug, int lb, int ub)
 {
     GET_THREAD_CONTEXT_ELSE
-        return;
+        return 0;
 
     GETWINDOW;
+
+    int passed = 0;
 
     for (int x = lx; x < ux; x++) {
         for (int y = ly; y < uy; y++) {
@@ -991,11 +993,14 @@ void script_rgbThreshold(int lr, int ur, int lg, int ug, int lb, int ub)
             else
             {
                 b->rgbData[i+0] = 255;
-                b->rgbData[i+1] = 255;//
+                b->rgbData[i+1] = 255;
                 b->rgbData[i+2] = 255;
+                passed++;
             }
         }
     }
+
+    return passed;
 }
 
 void normalize255( int& angle )
@@ -1023,14 +1028,16 @@ bool isHueWithinRange( int testHue, int middle, int range )
     return d <= range;
 }
 
-void script_hsvThreshold(int mh, int hRange, int ls, int us, int lv, int uv)
+int script_hsvThreshold(int mh, int hRange, int ls, int us, int lv, int uv)
 {
     GET_THREAD_CONTEXT_ELSE
-        return;
+        return 0;
 
     GETWINDOW;
 
     hsv_t hsv;
+
+    int passed = 0;
 
     for (int x = lx; x < ux; x++) {
         for (int y = ly; y < uy; y++) {
@@ -1052,6 +1059,9 @@ void script_hsvThreshold(int mh, int hRange, int ls, int us, int lv, int uv)
                 b->rgbData[i+1] = 0;
                 b->rgbData[i+2] = 0;
             }
+            else {
+                passed++;
+            }
             /*else
             {
                 b->rgbData[i+0] = sdc_red;
@@ -1060,11 +1070,18 @@ void script_hsvThreshold(int mh, int hRange, int ls, int us, int lv, int uv)
             }*/
         }
     }
+
+    return passed;
 }
 
-void script_hsvThresholdF(float mh, float hRange, float ls, float us, float lv, float uv)
+int script_rgbThresholdF(float lr, float ur, float lg, float ug, float lb, float ub)
 {
-    script_hsvThreshold(mh, hRange, ls, us, lv, uv);
+    return script_rgbThreshold(lr, ur, lg, ug, lb, ub);
+}
+
+int script_hsvThresholdF(float mh, float hRange, float ls, float us, float lv, float uv)
+{
+    return script_hsvThreshold(mh, hRange, ls, us, lv, uv);
 }
 
 

@@ -135,8 +135,8 @@ class CScriptArray* script_quickblob_default();
 class CScriptArray* script_quickblob(int color, int minpixels, int maxpixels, int minwidth, int maxwidth);
 void script_blur(int kernelSize);
 void script_grow(float pixls);
-void script_rgbThreshold(int lr, int ur, int lg, int ug, int lb, int ub);
-void script_hsvThreshold(int mh, int hRange, int ls, int us, int lv, int uv);
+int script_rgbThreshold(int lr, int ur, int lg, int ug, int lb, int ub);
+int script_hsvThreshold(int mh, int hRange, int ls, int us, int lv, int uv);
 void script_findContour(int method);
 void script_convexHull(bool drawLines);
 void script_flipFrame(int method);
@@ -153,6 +153,7 @@ void script_drawQRCode(script_qrcode& q, float fontSize);
 void script_drawText(std::string msg, float x, float y, float fontSize);
 
 void script_blurF(float kernelSize);
-void script_hsvThresholdF(float mh, float hRange, float ls, float us, float lv, float uv);
+int script_rgbThresholdF(float lr, float ur, float lg, float ug, float lb, float ub);
+int script_hsvThresholdF(float mh, float hRange, float ls, float us, float lv, float uv);
 
 #endif // SCRIPT_VISION_H
