@@ -357,7 +357,7 @@ bool setupScriptEngine()
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void grow(float pixels = 1)", asFUNCTION(script_grow), asCALL_CDECL);
     assert( r >= 0 );
-    r = engine->RegisterGlobalFunction("void rgbThreshold(int minRed, int maxRed, int minGreen, int maxGreen, int minBlue, int maxBlue)", asFUNCTION(script_rgbThreshold), asCALL_CDECL);
+    r = engine->RegisterGlobalFunction("int rgbThreshold(float minRed, float maxRed, float minGreen, float maxGreen, float minBlue, float maxBlue)", asFUNCTION(script_rgbThresholdF), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void findContour(int method = FC_ALL)", asFUNCTION(script_findContour), asCALL_CDECL);
     assert( r >= 0 );
@@ -372,7 +372,7 @@ bool setupScriptEngine()
     r = engine->RegisterGlobalFunction("float[]@ findCircles(float diameter)", asFUNCTION(script_findCircles), asCALL_CDECL);
     assert( r >= 0 );
 
-    r = engine->RegisterGlobalFunction("void hsvThreshold(float hueCenter, float hueRange, float minSat, float maxSat, float minVar, float maxVar)", asFUNCTION(script_hsvThresholdF), asCALL_CDECL);
+    r = engine->RegisterGlobalFunction("int hsvThreshold(float hueCenter, float hueRange, float minSat, float maxSat, float minVar, float maxVar)", asFUNCTION(script_hsvThresholdF), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void blur(float kernelSize)", asFUNCTION(script_blurF), asCALL_CDECL);
     assert( r >= 0 );
