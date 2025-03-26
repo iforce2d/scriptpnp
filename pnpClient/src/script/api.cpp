@@ -602,7 +602,7 @@ std::string script_strDictionary( void* d )
         int typeId = it.GetTypeId();
         if ( typeId == stringTypeId ) {
             const string *p = static_cast<const string *>(it.GetAddressOfValue());
-            str += *p + "\n";
+            str += "'" + *p + "'\n";
         }
         else if ( typeId == asTYPEID_BOOL ) {
             const bool *p = static_cast<const bool *>(it.GetAddressOfValue());

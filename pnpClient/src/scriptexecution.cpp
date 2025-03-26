@@ -177,8 +177,6 @@ bool runScript(string moduleName, string funcName, bool previewOnly, void *codeE
     if ( currentlyRunningScriptThread() )
         return false;
 
-    scriptStartTime = std::chrono::steady_clock::now();
-
     compiledScript_t compiled;
 
     if ( ! compileScript(moduleName, funcName, compiled, codeEditorWindow) )
@@ -193,7 +191,11 @@ bool runScript(string moduleName, string funcName, bool previewOnly, void *codeE
         setPreviewMoveLimitsFromCurrentActual();
     }
 
+    scriptStartTime = std::chrono::steady_clock::now();
+
     bool ok = runCompiledFunction(compiled, previewOnly, codeEditorWindow);
+
+    std::chrono::steady_clock::time_point scriptEndTime =   std::chrono::steady_clock::now();
 
     if ( previewOnly ) {
         calculateTraversePointsAndEvents();
@@ -204,8 +206,7 @@ bool runScript(string moduleName, string funcName, bool previewOnly, void *codeE
         return false;
     }
     else {
-        std::chrono::steady_clock::time_point t1 =   std::chrono::steady_clock::now();
-        long long timeTaken = std::chrono::duration_cast<std::chrono::microseconds>(t1 - scriptStartTime).count();
+        long long timeTaken = std::chrono::duration_cast<std::chrono::microseconds>(scriptEndTime - scriptStartTime).count();
         CodeEditorWindow* w = (CodeEditorWindow*)codeEditorWindow;
         if ( ! w ) {
             if ( ! scriptEditorWindows.empty() )
