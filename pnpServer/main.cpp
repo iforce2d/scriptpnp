@@ -1168,8 +1168,12 @@ int main() {
                     bool programIsValid = true;
 
                     for (int i = 0; i < (int)program.commands.size(); i++) {
-                        Command* cmd = program.commands[i];
-                        if ( cmd->type == CT_MOVETO ) {
+                        Command* cmd = program.commands[i];                        
+                        if ( cmd->type == CT_SET_CORNER_BLEND_OVERLAP ) {
+                            Command_setCornerBlendOverlap* sbo = (Command_setCornerBlendOverlap*)cmd;
+                            plan.setMaxCornerBlendOverlapFraction( sbo->overlap );
+                        }
+                        else if ( cmd->type == CT_MOVETO ) {
                             Command_moveTo* cmdMoveto = (Command_moveTo*)cmd;
                             m1.src = m1.dst;
 
@@ -1777,7 +1781,8 @@ int main() {
                 saveConfigToFile();
             }
             else if ( req.type == MT_PROBE ) {
-                if ( homing_homedAxes < 0x07 ) {
+                //if ( homing_homedAxes < 0x07 ) {
+                if ( (homing_homedAxes & 0x04) == 0 ) { // z axis only required
                     g_log.log(LL_ERROR, "Ignoring probe request, not homed");
                     rejectedProbingResult = TR_FAIL_NOT_HOMED;
                 }
