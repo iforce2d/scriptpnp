@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <cstring>
 
-#include "bcm2835Init.h"
+#include "rpispi.h"
 #include "RTThread.h"
 
 bool sigInt = false;
@@ -73,14 +73,19 @@ void RTThread::Run() noexcept {
     //printf("RTThread id = %d\n", threadId);
 
     // Map the RPi BCM2835 peripherals - uses "rtapi_open_as_root" in place of "open"
-    if (!rt_bcm2835_init())
+    /*if (!rt_bcm2835_init())
     {
-        printf("rt_bcm2835_init failed. Are you running with root privlages??\n");
+        printf("rt_bcm2835_init failed. Are you running as root?\n");
         return;
     }
 
-    if ( ! setupSPI() ) {
-        printf("setupSPI failed.\n");
+    if ( ! bcm2835_setupSPI() ) {
+        printf("bcm2835_setupSPI failed.\n");
+        return;
+    }*/
+
+    if ( ! rpispi_init() ) {
+        printf("RTThread returning!\n");
         return;
     }
 

@@ -9,9 +9,11 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <fstream>
+#include <zmq.h>
 
 #include "../common/scv/planner.h"
 #include "weeny.h"
+#include "rpispi.h"
 #include "RTThread.h"
 #include "interThread.h"
 
@@ -905,8 +907,26 @@ int main() {
 
     g_log.log(LL_INFO, "ScriptPNP server v%d.%d.%d", SCRIPTPNP_SERVER_VERSION_MAJOR, SCRIPTPNP_SERVER_VERSION_MINOR, SCRIPTPNP_SERVER_VERSION_PATCH);
 
-    g_log.log(LL_DEBUG, "clientReport_t: %d bytes", sizeof(clientReport_t));
-    g_log.log(LL_DEBUG, "commandRequest_t: %d bytes", sizeof(commandRequest_t));
+    int major, minor, patch;
+    zmq_version(&major, &minor, &patch);
+    g_log.log(LL_INFO, "   ZeroMQ %d.%d.%d", major, minor, patch);
+
+    if ( ! checkPiType() ) {
+        printf("Could not determine RPi type!\n");
+        return -1;
+    }
+
+    /*if ( ! rt_spi_init() ) {
+        printf("rt_spi_init failed!\n");
+        return -1;
+    }
+
+    printf("Exiting normally\n");
+
+    return 0;*/
+
+    //g_log.log(LL_DEBUG, "clientReport_t: %d bytes", sizeof(clientReport_t));
+    //g_log.log(LL_DEBUG, "commandRequest_t: %d bytes", sizeof(commandRequest_t));
 
     g_log.log(LL_INFO, "Server started");
 

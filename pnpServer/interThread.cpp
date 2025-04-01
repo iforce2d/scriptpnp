@@ -132,9 +132,9 @@ int ntQueueLength() {
 
 void initInterThread() {
     for (int i = 0; i < NUM_RT_REPORT; i++) {
-        memset(datalist_RT2NT, 0, sizeof(datalist_RT2NT));
+        memset((void*)datalist_RT2NT, 0, sizeof(datalist_RT2NT));
     }
     for (int i = 0; i < NUM_NT_COMMAND; i++) {
-        memset(datalist_NT2RT, 0, sizeof(datalist_NT2RT));
+        memset((void*)datalist_NT2RT, 0, sizeof(datalist_NT2RT));
     }
 }
