@@ -146,6 +146,12 @@ void prepareProbingPlanner() {
         zDest = p.z + probingParams.backoffDistance2;
     }
 
+    float maxZLimit = machineLimits.posLimitUpper.z - offsetAtHome.z;
+    if ( zDest > maxZLimit ) {
+        zDest = maxZLimit;
+        g_log.log(LL_DEBUG,"prepareProbingPlanner, limiting backoff to workspace");
+    }
+
     probingPlanner.clear();
     probingPlanner.resetTraverse();
 
@@ -343,7 +349,7 @@ void doProbingUpdate() {
                 prepareProbingPlanner(); // next phase
             }
         }
-        else if ( probing_phase == PP_BACKOFF1 ) {
+        /*else if ( probing_phase == PP_BACKOFF1 ) {
             // still backing off
             if ( ! isProbeTriggered() ) {
                 // trigger has been cleared can start approach2 early
@@ -351,7 +357,7 @@ void doProbingUpdate() {
                 probing_phase = (probingPhase_e)(probing_phase + 1);
                 prepareProbingPlanner();
             }
-        }
+        }*/
     }
 }
 

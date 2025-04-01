@@ -960,6 +960,8 @@ int main() {
     rtCommand.speedScale = 1;
     rtCommand.jogSpeedScale = 1;
 
+    resetLoadcell();
+
     RTThread rt_thread(98, SCHED_FIFO, 1000000);
     rt_thread.Start();
 
