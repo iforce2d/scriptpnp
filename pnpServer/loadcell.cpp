@@ -1,11 +1,14 @@
-
 #include <float.h>
 #include "loadcell.h"
 #include "log.h"
+#include "probing.h"
 
 int32_t loadcellCalibrationRawOffset = 1000;
 float loadcellCalibrationWeight = 100;
-volatile bool loadcellNonZero = false;
+volatile bool isLoadcellTriggered = false;
+
+// largest sample distance from mean (aka noise), stored after initial baseline measure, requires machine to stay still on startup for a bit
+float baselineRange = 1000;
 
 template<typename rawType, int numReadings>
 class MovingAverage {
@@ -15,14 +18,12 @@ class MovingAverage {
     rawType delta; // delta between newest and oldest readings
     int index;
     int numReadingsTaken;
-    float range; // largest sample distance from mean, stored after initial baseline measure
 public:
     void reset() {
         readingCount = numReadings;
         memset(readings, 0, sizeof(readings));
         total = 0;
         index = 0;
-        range = 0;
         delta = 0;
         numReadingsTaken = 0;
     }
@@ -58,19 +59,16 @@ public:
     inline int getNumReadingsTaken() {
         return numReadingsTaken;
     }
-    inline float getRange() {
-        return range;
-    }
     inline float getDelta() {
         return delta;
     }
-    inline void storeRange() {
+    inline float getRange() { // distance of furthest sample from mean
         float avg = getAverage();
         float low = getLowest();
         float high = getHighest();
         float d0 = fabsf(avg - low);
         float d1 = fabsf(avg - high);
-        range = (d0 > d1) ? d0 : d1;
+        return (d0 > d1) ? d0 : d1;
     }
     float getAverage() {
         int actualNumReadings = numReadingsTaken < readingCount ? numReadingsTaken : readingCount;
@@ -78,13 +76,19 @@ public:
             return 0;
         return total / (float)actualNumReadings;
     }
+    void dump() {
+        for (int i = 0; i < readingCount; i++) {
+            g_log.log(LL_DEBUG, "  %d", readings[i] );
+        }
+        g_log.log(LL_DEBUG, "\n");
+    }
 };
 
 MovingAverage<int32_t, 200> baselineMA;    // 1 sec
 MovingAverage<int32_t,   2> measurementMA; // 0.01 sec
 MovingAverage<int32_t,   4> probingMA;     // 0.02 sec
 
-void resetLoadcell() {
+void resetLoadcell() {    
     baselineMA.reset();
     measurementMA.reset();
     probingMA.reset();
@@ -92,58 +96,52 @@ void resetLoadcell() {
 
 void updateLoadcell(int32_t loadCellRaw) {
 
-    loadcellNonZero = false;
+    isLoadcellTriggered = false;
 
     int fullCount = baselineMA.getReadingCount();
 
     // always use for baseline if just started
     if ( baselineMA.getNumReadingsTaken() < fullCount ) {
-        //g_log.log(LL_INFO, "loadCellRaw %d", loadCellRaw);
         baselineMA.addReading(loadCellRaw);
         measurementMA.reset();
-        //loadcellNonZero = false;
         return;
     }
 
     if ( baselineMA.getNumReadingsTaken() == fullCount ) {
-        baselineMA.storeRange();
-        g_log.log(LL_INFO, "Load cell baseline: %f, range = %f", baselineMA.getAverage(), baselineMA.getRange());
+        baselineRange = baselineMA.getRange();
+        g_log.log(LL_INFO, "Load cell baselineRange: %f", baselineMA.getRange());
     }
 
     float avg = baselineMA.getAverage();
-    float range = baselineMA.getRange();
-    float low  = avg - range;
-    float high = avg + range;
 
-    if ( loadCellRaw > low ) {
+    if ( loadCellRaw > avg ) {
         probingMA.addReading( loadCellRaw );
-        if ( (probingMA.getNumReadingsTaken() == probingMA.getReadingCount()) && probingMA.getDelta() > (50 * range) ) {
-            loadcellNonZero = true;
-            g_log.log(LL_DEBUG, "Fast trigger");
+        if ( (probingMA.getNumReadingsTaken() > probingMA.getReadingCount()) && (probingMA.getDelta() > (50 * baselineRange)) ) {
+            isLoadcellTriggered = true;
+            g_log.log(LL_DEBUG, "Fast trigger %f, %f", probingMA.getDelta(), 50*baselineRange);
         }
-        else if ( loadCellRaw > (avg + 100 * range)  ) {
-            loadcellNonZero = true;
+        else if ( loadCellRaw > (avg + 100 * baselineRange)  ) {
+            isLoadcellTriggered = true;
             g_log.log(LL_DEBUG, "Slow trigger");
         }
-        if ( loadcellNonZero ) {
+        if ( isLoadcellTriggered ) {
             probingMA.reset();
         }
     }
 
-    // after baseline is established, only allow similar values to update baseline
-    if ( loadCellRaw > low && loadCellRaw < high ) {
-        bool b = baselineMA.addReading(loadCellRaw);
-        if ( b ) {
-            // periodically adjust range and output to log
-            baselineMA.storeRange();
-            g_log.log(LL_INFO, "Adjusted load cell baseline: %f, range = %f", avg, baselineMA.getRange());
-        }
+    // Only update baseline while not probing, or during first approach which tends to be longer and baseline slowly moves.
+    // After the first approach triggers, distances will be much smaller so lock in the baseline for the rest of the probe.
+    if ( probing_phase == PP_APPROACH1 || probing_phase == PP_DONE ) {
+        //bool b =
+        baselineMA.addReading(loadCellRaw);
+        /*if ( b ) {
+            // periodically output to log
+            g_log.log(LL_INFO, "Adjusted load cell baseline: %f", avg);
+        }*/
         measurementMA.reset();
-        //loadcellNonZero = false;
         return;
     }
 
-    //loadcellNonZero = true;
     measurementMA.addReading(loadCellRaw);
 }
 
@@ -155,7 +153,7 @@ float getLoadCellMeasurement() {
     return measurementMA.getAverage();
 }
 
-float getWeight() {
+float getWeight() { return baselineMA.getAverage(); // temporarily show baseline in plot
     if ( measurementMA.getNumReadingsTaken() < 1 )
         return 0;
     float bl = baselineMA.getAverage();

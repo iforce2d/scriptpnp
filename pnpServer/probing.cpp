@@ -36,7 +36,7 @@ bool isProbeTriggered()
     }
     else if ( probing_type == PT_LOADCELL ) {
         if ( probing_minForce == 0 )
-            return loadcellNonZero;
+            return isLoadcellTriggered;
         else if ( getWeight() > probing_minForce )
             return true;
     }
@@ -251,6 +251,7 @@ void doProbingUpdate_vacuum() {
                 if ( p.z <= probing_targetZ ) {
                     //printf("probing: no contact detected\n");
                     probing_result = PR_FAIL_NOT_TRIGGERED;
+                    probing_phase = PP_DONE;
                     motionMode = MM_NONE;
                     v = vec3_zero;
                 }
@@ -322,6 +323,7 @@ void doProbingUpdate() {
         if ( ! stillRunning ) {
             printf("probing: no hit detected\n");
             probing_result = PR_FAIL_NOT_TRIGGERED;
+            probing_phase = PP_DONE;
             motionMode = MM_NONE;
             v = vec3_zero;
         }
@@ -333,6 +335,7 @@ void doProbingUpdate() {
             if ( probing_phase == PP_DONE ) {
                 printf("probing: completed\n");
                 probing_result = PR_SUCCESS;
+                probing_phase = PP_DONE;
                 motionMode = MM_NONE;
                 v = vec3_zero;
             }
@@ -342,6 +345,7 @@ void doProbingUpdate() {
                     if ( isProbeTriggered() ) {
                         printf("probing: backoff too short?\n");
                         probing_result = PR_FAIL_ALREADY_TRIGGERED;
+                        probing_phase = PP_DONE;
                         motionMode = MM_NONE;
                         v = vec3_zero;
                     }
