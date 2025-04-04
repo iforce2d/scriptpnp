@@ -879,7 +879,7 @@ void backupConfig() {
         char buf[64];
         sprintf(buf, "bkup/config.json-%d", i);
         if ( std::experimental::filesystem::exists(buf) ) {
-            printf("Comparing %s\n", buf); fflush(stdout);
+            g_log.log(LL_DEBUG, "Comparing %s", buf); fflush(stdout);
             if ( compareFiles("config.json", buf) ) {
                 g_log.log(LL_INFO, "Skipping config backup (same as %s)", buf);
                 return;
@@ -912,18 +912,9 @@ int main() {
     g_log.log(LL_INFO, "   ZeroMQ %d.%d.%d", major, minor, patch);
 
     if ( ! checkPiType() ) {
-        printf("Could not determine RPi type!\n");
+        g_log.log(LL_FATAL, "Could not determine RPi type!");
         return -1;
     }
-
-    /*if ( ! rt_spi_init() ) {
-        printf("rt_spi_init failed!\n");
-        return -1;
-    }
-
-    printf("Exiting normally\n");
-
-    return 0;*/
 
     //g_log.log(LL_DEBUG, "clientReport_t: %d bytes", sizeof(clientReport_t));
     //g_log.log(LL_DEBUG, "commandRequest_t: %d bytes", sizeof(commandRequest_t));
@@ -1110,7 +1101,7 @@ int main() {
             rejectedTrajectoryResult = TR_NONE;
         }
         if ( mStatus.trajectoryResult != TR_NONE ) {
-            g_log.log(LL_INFO, "Trajectory result: %s\n", getTrajectoryResultName(mStatus.trajectoryResult));
+            g_log.log(LL_INFO, "Trajectory result: %s", getTrajectoryResultName(mStatus.trajectoryResult));
             forceReport = true;
         }
 
@@ -1304,7 +1295,7 @@ int main() {
                             plan.appendSync(m1.dst);
                         }
                         else {
-                            printf("(main) Unhandled command type: %s\n", getCommandName(cmd->type));
+                            g_log.log(LL_WARN, "(main) Unhandled command type: %s", getCommandName(cmd->type));
                         }
                     }
 
@@ -1803,7 +1794,7 @@ int main() {
                 }
             }
             else  {
-                printf("Ignoring command request type: %s\n", getMessageName(req.type));
+                g_log.log(LL_WARN, "Ignoring command request type: %s", getMessageName(req.type));
                 ackOrNack = false;
             }
 
@@ -1814,7 +1805,7 @@ int main() {
         if ( jogButtonDown() ) {
             long long timeSinceLastJogRecv = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastJogRecvTime).count();
             if ( timeSinceLastJogRecv > 200 ) {
-                printf("Canceling jog\n"); fflush(stdout);
+                //printf("Canceling jog\n"); fflush(stdout);
                 for (int i = 0; i < 3; i++)
                     jogDirs[i] = 0;
                 memcpy(mCmd.jogDirs, jogDirs, sizeof(mCmd.jogDirs));
@@ -1847,52 +1838,24 @@ int main() {
 
     estop = true;
 
-    printf("Waiting for current move to finish\n");
+    g_log.log(LL_DEBUG, "Waiting for current move to finish");
     waitForMotionIdle( mStatus, 10000 );
 
 
-    printf("Wait a bit...\n");
+    g_log.log(LL_DEBUG, "Wait a bit more...");
     for (int i = 0; i < 10; i++) {
         std::this_thread::sleep_for(5ms);
         int numReports = rtReportCheck(&mStatus); // must clear old reports!!
         reportActualPosition( numReports, mStatus, false );
     }
 
-/*
-    printf("Setting up final move back to origin\n");
-    {
-        vec3 dest = vec3_zero;
-        rtReportCheck(&mStatus);
-        printf("Final move from %f, %f, %f to %f, %f, %f\n", mStatus.actualPos.x, mStatus.actualPos.y, mStatus.actualPos.z, dest.x, dest.y, dest.z);
-
-        m1.vel = 150;
-
-        plan.clear();
-        plan.resetTraverse();
-        m1.src = mStatus.actualPos;
-        m1.dst = dest;
-        //applyHomeOffsetToMove(m1);
-        plan.appendMove(m1);
-        plan.calculateMoves();
-        plan.addOffsetToMoves(offsetAtHome);
-
-        mCmd.traj = &plan;
-        ntCommand( &mCmd );
-
-        std::this_thread::sleep_for(5ms);
-    }
-
-    printf("Waiting for final move to finish\n");
-    waitForMotionIdle( mStatus, 10000 );
-*/
-
     sigIntRT = true;
 
     rt_thread.Join();
 
     rtReportCheck(&mStatus);
-    printf("Exiting with position %f, %f, %f\n", mStatus.actualPos.x, mStatus.actualPos.y, mStatus.actualPos.z);
-    printf("maxFollowError %f, %f, %f\n", maxFollowError.x, maxFollowError.y, maxFollowError.z);
+    g_log.log(LL_INFO, "Exiting with position %f, %f, %f", mStatus.actualPos.x, mStatus.actualPos.y, mStatus.actualPos.z);
+    g_log.log(LL_INFO, "maxFollowError %f, %f, %f", maxFollowError.x, maxFollowError.y, maxFollowError.z);
 
 
 #ifdef DO_ZMQ

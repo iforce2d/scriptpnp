@@ -191,9 +191,9 @@ void dw_spi_hw_init(struct dw_spi *dws)
     */
 	if (!dws->ver) {
 		dws->ver = dw_readl(dws, DW_SPI_VERSION);
-		DEBUG_PRINT("dws->ver = %x\n", dws->ver);
+        DEBUG_PRINT("dws->ver = %x", dws->ver);
 
-        DEBUG_PRINT("Synopsys DWC%sSSI v%c.%c%c\n",
+        DEBUG_PRINT("Synopsys DWC%sSSI v%c.%c%c",
 			dw_spi_ip_is(dws, PSSI) ? " APB " : " ",
 			DW_SPI_GET_BYTE(dws->ver, 3), DW_SPI_GET_BYTE(dws->ver, 2),
 			DW_SPI_GET_BYTE(dws->ver, 1));
@@ -214,7 +214,7 @@ void dw_spi_hw_init(struct dw_spi *dws)
 		dw_writel(dws, DW_SPI_TXFTLR, 0);
 
 		dws->fifo_len = (fifo == 1) ? 0 : fifo;
-		DEBUG_PRINT("Detected FIFO size: %u bytes\n", dws->fifo_len);
+        DEBUG_PRINT("Detected FIFO size: %u bytes", dws->fifo_len);
 	}
 
 	/*
@@ -234,7 +234,7 @@ void dw_spi_hw_init(struct dw_spi *dws)
 		if (!(cr0 & DW_PSSI_CTRLR0_DFS_MASK)) {
 			dws->caps |= DW_SPI_CAP_DFS32;
 			dws->dfs_offset = __bf_shf(DW_PSSI_CTRLR0_DFS32_MASK);
-			DEBUG_PRINT("Detected 32-bits max data frame size\n");
+            DEBUG_PRINT("Detected 32-bits max data frame size");
 		}
 	} else {
 		dws->caps |= DW_SPI_CAP_DFS32;

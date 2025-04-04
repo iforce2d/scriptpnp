@@ -4,11 +4,13 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "log.h"
+
 //#define DEBUG 1 // Define DEBUG to enable debugging output
 
 #if DEBUG
     #define DEBUG_PRINT(fmt, ...) \
-        do { fprintf(stderr, "DEBUG: " fmt, ##__VA_ARGS__); } while (0)
+        do { g_log.log(LL_DEBUG, "DEBUG: " fmt, ##__VA_ARGS__); } while (0)
 #else
     #define DEBUG_PRINT(fmt, ...) \
         do { } while (0)

@@ -3,6 +3,8 @@
 #include "log.h"
 #include "probing.h"
 
+extern motionMode_e motionMode;
+
 int32_t loadcellCalibrationRawOffset = 1000;
 float loadcellCalibrationWeight = 100;
 volatile bool isLoadcellTriggered = false;
@@ -108,7 +110,7 @@ void updateLoadcell(int32_t loadCellRaw) {
     }
 
     if ( baselineMA.getNumReadingsTaken() == fullCount ) {
-        baselineRange = baselineMA.getRange();
+        //baselineRange = baselineMA.getRange();
         g_log.log(LL_INFO, "Load cell baselineRange: %f", baselineMA.getRange());
     }
 
@@ -116,9 +118,11 @@ void updateLoadcell(int32_t loadCellRaw) {
 
     if ( loadCellRaw > avg ) {
         probingMA.addReading( loadCellRaw );
-        if ( (probingMA.getNumReadingsTaken() > probingMA.getReadingCount()) && (probingMA.getDelta() > (50 * baselineRange)) ) {
+        if ( (probingMA.getNumReadingsTaken() > probingMA.getReadingCount()) &&
+             (probingMA.getDelta() > (100 * baselineRange)) &&
+             (loadCellRaw > (avg + 100 * baselineRange)) ) {
             isLoadcellTriggered = true;
-            g_log.log(LL_DEBUG, "Fast trigger %f, %f", probingMA.getDelta(), 50*baselineRange);
+            g_log.log(LL_DEBUG, "Fast trigger %f, %f", probingMA.getDelta(), 100*baselineRange);
         }
         else if ( loadCellRaw > (avg + 100 * baselineRange)  ) {
             isLoadcellTriggered = true;
@@ -129,15 +133,16 @@ void updateLoadcell(int32_t loadCellRaw) {
         }
     }
 
-    // Only update baseline while not probing, or during first approach which tends to be longer and baseline slowly moves.
-    // After the first approach triggers, distances will be much smaller so lock in the baseline for the rest of the probe.
-    if ( probing_phase == PP_APPROACH1 || probing_phase == PP_DONE ) {
-        //bool b =
-        baselineMA.addReading(loadCellRaw);
-        /*if ( b ) {
+    // only update baseline while not probing, or during first approach which tends to be longer and baseline slowly moves
+    bool allowBaselineAdjustment =
+            (motionMode == MM_NONE) ||
+            (motionMode == MM_PROBING && probing_phase == PP_APPROACH1);
+    if ( allowBaselineAdjustment ) {
+        bool b = baselineMA.addReading(loadCellRaw);
+        if ( b ) {
             // periodically output to log
             g_log.log(LL_INFO, "Adjusted load cell baseline: %f", avg);
-        }*/
+        }
         measurementMA.reset();
         return;
     }
@@ -153,7 +158,7 @@ float getLoadCellMeasurement() {
     return measurementMA.getAverage();
 }
 
-float getWeight() { return baselineMA.getAverage(); // temporarily show baseline in plot
+float getWeight() { return baselineMA.getAverage();
     if ( measurementMA.getNumReadingsTaken() < 1 )
         return 0;
     float bl = baselineMA.getAverage();

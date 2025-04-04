@@ -10,6 +10,7 @@
 
 #include "rpispi.h"
 #include "RTThread.h"
+#include "log.h"
 
 bool sigInt = false;
 bool sigIntRT = false;
@@ -60,7 +61,8 @@ void RTThread::Start() {
 
     ret = pthread_create(&thread_, &attr, &RTThread::RunThread, this);
     if (ret) {
-        throw std::runtime_error(std::string("error in pthread_create: ") + std::strerror(ret));
+        g_log.log(LL_FATAL, "Could not create real-time thread, are you running as root?");
+        throw std::runtime_error(std::string("RTThread::Start: error in pthread_create: ") + std::strerror(ret));
     }
 }
 

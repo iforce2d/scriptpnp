@@ -12,7 +12,6 @@
 #include "gpiochip_rp1.h"
 #include "spi-dw.h"
 
-
 const uint32_t spi_bases[] = {
     RP1_SPI0_BASE,
     RP1_SPI1_BASE,
@@ -82,7 +81,7 @@ void rp1spi_transfer(uint8_t spi_num, const void *txbuf, void *rxbuf, uint8_t le
 
 int rp1spi_init(uint8_t spi_num, uint8_t cs_num, uint8_t mode, uint32_t freq)
 {
-    DEBUG_PRINT("rp1spi_init(), SPI%d cs %d mode %d freq %d\n", spi_num, cs_num, mode, freq);
+    DEBUG_PRINT("rp1spi_init(), SPI%d cs %d mode %d freq %d", spi_num, cs_num, mode, freq);
 
     struct dw_spi       *dws;
     struct dw_spi_cfg   *cfg;
@@ -107,7 +106,7 @@ int rp1spi_init(uint8_t spi_num, uint8_t cs_num, uint8_t mode, uint32_t freq)
     // SPI bases address
     dws->regs = (void*)(volatile uint32_t *)((uintptr_t)inst->priv + spi_bases[spi_num]);
 
-    DEBUG_PRINT("SPI%d Base address: %11x, mapped at address: %p\n", spi_num, spi_bases[spi_num], dws->regs);
+    DEBUG_PRINT("SPI%d Base address: %11x, mapped at address: %p", spi_num, spi_bases[spi_num], dws->regs);
 
     // Basic HW init
     dw_spi_hw_init(dws);
@@ -122,10 +121,10 @@ int rp1spi_init(uint8_t spi_num, uint8_t cs_num, uint8_t mode, uint32_t freq)
     // Search for MOSI pin by name
     res = rp1_get_gpio_fsel_from_name(mosi_pin);
     if (res.gpio_num != -1) {
-        DEBUG_PRINT("Pin: MOSI -> GPIO Number: %d, FSEL Number: %d\n", res.gpio_num, res.fsel_num);
+        DEBUG_PRINT("Pin: MOSI -> GPIO Number: %d, FSEL Number: %d", res.gpio_num, res.fsel_num);
     } else {
-		return -1;
-        printf("Failed to get GPIO and FSEL for pin: %s\n", mosi_pin);
+        DEBUG_PRINT("Failed to get GPIO and FSEL for pin: %s", mosi_pin);
+        return -1;
     }
     gpio_set_fsel(res.gpio_num, (GPIO_FSEL_T)res.fsel_num);
     gpio_set_pull(res.gpio_num, PULL_NONE);
@@ -133,10 +132,10 @@ int rp1spi_init(uint8_t spi_num, uint8_t cs_num, uint8_t mode, uint32_t freq)
     // Search for MISO pin by name
     res = rp1_get_gpio_fsel_from_name(miso_pin);
     if (res.gpio_num != -1) {
-        DEBUG_PRINT("Pin: MISO -> GPIO Number: %d, FSEL Number: %d\n", res.gpio_num, res.fsel_num);
+        DEBUG_PRINT("Pin: MISO -> GPIO Number: %d, FSEL Number: %d", res.gpio_num, res.fsel_num);
     } else {
-		return -1;
-        printf("Failed to get GPIO and FSEL for pin: %s\n", miso_pin);
+        DEBUG_PRINT("Failed to get GPIO and FSEL for pin: %s", miso_pin);
+        return -1;
     }
     gpio_set_fsel(res.gpio_num, (GPIO_FSEL_T)res.fsel_num);
     gpio_set_pull(res.gpio_num, PULL_NONE);
@@ -144,10 +143,10 @@ int rp1spi_init(uint8_t spi_num, uint8_t cs_num, uint8_t mode, uint32_t freq)
     // Search for SCLK pin by name
     res = rp1_get_gpio_fsel_from_name(sclk_pin);
     if (res.gpio_num != -1) {
-        DEBUG_PRINT("Pin: SCLK -> GPIO Number: %d, FSEL Number: %d\n", res.gpio_num, res.fsel_num);
+        DEBUG_PRINT("Pin: SCLK -> GPIO Number: %d, FSEL Number: %d", res.gpio_num, res.fsel_num);
     } else {
-		return -1;
-        printf("Failed to get GPIO and FSEL for pin: %s\n", sclk_pin);
+        DEBUG_PRINT("Failed to get GPIO and FSEL for pin: %s", sclk_pin);
+        return -1;
     }
     gpio_set_fsel(res.gpio_num, (GPIO_FSEL_T)res.fsel_num);
     gpio_set_pull(res.gpio_num, PULL_NONE);
@@ -155,10 +154,10 @@ int rp1spi_init(uint8_t spi_num, uint8_t cs_num, uint8_t mode, uint32_t freq)
     // Search for CS pin by name
     res = rp1_get_gpio_fsel_from_name(cs_pin);
     if (res.gpio_num != -1) {
-        DEBUG_PRINT("Pin: CS   -> GPIO Number: %d, FSEL Number: %d\n", res.gpio_num, res.fsel_num);
+        DEBUG_PRINT("Pin: CS   -> GPIO Number: %d, FSEL Number: %d", res.gpio_num, res.fsel_num);
     } else {
-		return -1;
-        printf("Failed to get GPIO and FSEL for pin: %s\n", cs_pin);
+        DEBUG_PRINT("Failed to get GPIO and FSEL for pin: %s", cs_pin);
+        return -1;
     }
     gpio_set_fsel(res.gpio_num, (GPIO_FSEL_T)res.fsel_num);
     gpio_set_pull(res.gpio_num, PULL_NONE);
@@ -172,10 +171,10 @@ int rp1spi_init(uint8_t spi_num, uint8_t cs_num, uint8_t mode, uint32_t freq)
     dw_spi_update_config(dws, dev, cfg);
 
     uint32_t baudr = dw_readl(dws, DW_SPI_BAUDR);
-    DEBUG_PRINT("clk_div = %d\n", baudr);
+    DEBUG_PRINT("clk_div = %d", baudr);
 
     baudr = dws->max_freq / dw_readl(dws, DW_SPI_BAUDR);
-    DEBUG_PRINT("BAUDR = %d hz\n", baudr);
+    DEBUG_PRINT("BAUDR = %d hz", baudr);
 
     // Enable controller after writing control registers
     dw_spi_enable_chip(dws, 1);
@@ -286,7 +285,7 @@ int rp1lib_init(void)
 {
     uint64_t phys_addr = RP1_BAR1;
 
-    DEBUG_PRINT("Initialising RP1 library: %s\n", __func__);
+    DEBUG_PRINT("Initialising RP1 library: %s", __func__);
 
     // rp1_chip is declared in gpiochip_rp1.c
     chip = &rp1_chip;
@@ -311,7 +310,7 @@ int rp1lib_init(void)
         inst->phys_addr
         );
 
-    DEBUG_PRINT("Base address: %11lx, size: %x, mapped at address: %p\n", inst->phys_addr, RP1_BAR1_LEN, inst->priv);
+    DEBUG_PRINT("Base address: %11lx, size: %x, mapped at address: %p", inst->phys_addr, RP1_BAR1_LEN, inst->priv);
 
     if (inst->priv == MAP_FAILED)
         return errno;
