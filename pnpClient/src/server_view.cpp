@@ -852,15 +852,6 @@ extern probingResult_e lastProbingResult;
 extern float lastProbedHeight;
 
 void showProbeSetup() {
-    // digital
-    //     which pin
-    //     which state of the pin triggers
-    //         approach speed 1, backoff dist, approach speed 2
-    // load
-    //     approach speed 1, backoff dist, approach speed 2
-    // vacuum
-    // (measure leakage with open nozzle)
-    // step height
 
     if (ImGui::CollapsingHeader("Digital input"))
     {
@@ -889,6 +880,26 @@ void showProbeSetup() {
             config_probing.digitalTriggerState = tmp;
             ImGui::SameLine();
             HelpMarker("Pin state when probe is triggered (0 or 1)");
+
+            ImGui::EndTable();
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Load cell"))
+    {
+        if (ImGui::BeginTable("probeloadcell", 2, ImGuiTableFlags_SizingFixedFit))
+        {
+            ImGui::TableNextRow();
+
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Trigger threshold:");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::PushItemWidth(100);
+            int tmp = config_probing.loadcellTriggerThreshold;
+            ImGui::InputInt("##probeloadcelltriggerthreshold", &tmp, 0);
+            config_probing.loadcellTriggerThreshold = tmp;
+            ImGui::SameLine();
+            HelpMarker("Distance from loadcell norm to consider triggered. If negative, values below zero will cause trigger.");
 
             ImGui::EndTable();
         }
@@ -1072,7 +1083,7 @@ void showProbeSetup() {
         doProbeType = PT_DIGITAL;
     }
     ImGui::SameLine();
-    if ( ImGui::Button("Load cell") ) {
+    if ( ImGui::Button("Load cell##foo") ) {
         doProbeType = PT_LOADCELL;
     }
     ImGui::SameLine();
@@ -1190,7 +1201,7 @@ void showServerView(bool* p_open)
                 showOutputOverrides();
                 ImGui::EndTabItem();
             }
-            whichTab++;
+            /*whichTab++;
             if (ImGui::BeginTabItem("Load cell"))
             {
                 currentTabIndex = whichTab;
@@ -1198,7 +1209,7 @@ void showServerView(bool* p_open)
                     sendCommandRequestOfType(MT_CONFIG_LOADCELL_CALIB_FETCH);
                 showLoadcellCalib();
                 ImGui::EndTabItem();
-            }
+            }*/
             whichTab++;
             if (ImGui::BeginTabItem("Probing"))
             {

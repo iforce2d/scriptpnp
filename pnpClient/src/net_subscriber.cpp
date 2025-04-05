@@ -10,11 +10,15 @@
 #include "log.h"
 #include "server_view.h"
 
+#include "imgui_notify/imgui_notify.h"
+
 void* context = NULL;
 void* subscriber = NULL;
 
 pthread_t subscriberThread = 0;
 void* dataRecvSocket = NULL;
+
+bool alreadyReportedWrongSubscriberMessageVersion = false;
 
 void* subscriberThreadFunc( void* ptr ) {
 
@@ -105,6 +109,8 @@ void startSubscriber()
 {
     if ( context )
         return;
+
+    alreadyReportedWrongSubscriberMessageVersion = false;
 
     g_log.log(LL_DEBUG, "Starting subscriber...");
 
@@ -225,21 +231,34 @@ bool checkSubscriberMessages(clientReport_t* rep) {
                 else {
                     //clientReport_t* apr = (clientReport_t*)zmq_msg_data( &msg );
                     //printf("spi: %d, mode: %d, actualPos: %f %f %f\n", apr->spiOk, apr->mode, apr->x, apr->y, apr->z); fflush(stdout);
-                    gotSomething = true;
 
                     memcpy(rep, zmq_msg_data(&msg), sizeof(clientReport_t));
 
-                    if ( rep->homingResult != 0 ) {
-                        //printf("hr = %d",rep->homingResult);
-                        homingResult = rep->homingResult;
+                    if ( rep->messageVersion == MESSAGE_VERSION ) {
+
+                        gotSomething = true;
+
+                        if ( rep->homingResult != 0 ) {
+                            //printf("hr = %d",rep->homingResult);
+                            homingResult = rep->homingResult;
+                        }
+                        if ( rep->probingResult != 0 ) {
+                            //printf("hr = %d",rep->probingResult);
+                            probingResult = rep->probingResult;
+                        }
+                        if ( rep->trajResult != 0 ) {
+                            //printf("tr = %d",rep->trajResult);
+                            trajResult = rep->trajResult;
+                        }
                     }
-                    if ( rep->probingResult != 0 ) {
-                        //printf("hr = %d",rep->probingResult);
-                        probingResult = rep->probingResult;
-                    }
-                    if ( rep->trajResult != 0 ) {
-                        //printf("tr = %d",rep->trajResult);
-                        trajResult = rep->trajResult;
+                    else {
+                        if ( ! alreadyReportedWrongSubscriberMessageVersion ) {
+                            char buf[128];
+                            snprintf(buf, sizeof(buf), "Received update from server but message version is wrong (expected %d, got %d)", MESSAGE_VERSION, rep->messageVersion);
+                            g_log.log(LL_WARN, buf);
+                            ImGui::InsertNotification({ ImGuiToastType_Warning, 10000, buf });
+                            alreadyReportedWrongSubscriberMessageVersion = true;
+                        }
                     }
 
                     zmq_msg_close(&msg);

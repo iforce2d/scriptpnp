@@ -32,6 +32,7 @@ struct homingParams_t { // per axis
 
 struct probingParams_t {
     int digitalTriggerPin; // 0 indexed, -1 = invalid
+    int32_t loadcellTriggerThreshold; // distance from moving average
     int digitalTriggerState; // 0 = trigger when low, 1 = trigger when high
     float vacuumStep;
     int vacuumSniffPin;

@@ -6,7 +6,7 @@
 
 #include "../common/config.h"
 
-#define MESSAGE_VERSION 2
+#define MESSAGE_VERSION 3
 
 #define NUM_ROTATION_AXES 4
 
@@ -110,6 +110,7 @@ enum probeType_t {
 };
 
 typedef struct PACKED {
+    uint8_t messageVersion;
     bool spiOk;
     int mode;
     uint8_t homingResult;

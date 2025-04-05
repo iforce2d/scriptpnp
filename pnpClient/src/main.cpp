@@ -844,7 +844,7 @@ void showPlotsView(bool* p_open) {
             ImPlot::PlotLineG("Rot 0", MyDataGetter, (void*)plotRot0, MAXPLOTPOINTS);
             ImPlot::PlotLineG("Vac", MyDataGetter, (void*)plotVac, MAXPLOTPOINTS);
             ImPlot::PlotLineG("Load", MyDataGetter, (void*)plotLoad, MAXPLOTPOINTS);
-            ImPlot::PlotLineG("Weight", MyDataGetter, (void*)plotWeight, MAXPLOTPOINTS);
+            ImPlot::PlotLineG("Norm", MyDataGetter, (void*)plotWeight, MAXPLOTPOINTS);
             ImPlot::EndPlot();
         }
     }
@@ -1897,7 +1897,7 @@ int main(int, char**)
                 ImGui::SameLine();
                 ImGui::Text("Load cell: %d", lastStatusReport.loadcell);
                 ImGui::SameLine();
-                ImGui::Text("Weight: %f", lastStatusReport.weight);
+                ImGui::Text("Load cell norm: %f", lastStatusReport.weight);
 
                 ImGui::Text("Move limits: vel %.0f, acc %.0f, jerk %.0f", lastActualMoveLimits.vel, lastActualMoveLimits.acc, lastActualMoveLimits.jerk);
                 ImGui::Text("Rotate limits: vel %.0f, acc %.0f, jerk %.0f", lastActualRotateLimits.vel, lastActualRotateLimits.acc, lastActualRotateLimits.jerk);
