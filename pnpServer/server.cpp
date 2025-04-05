@@ -21,29 +21,29 @@ void *replier = NULL;
 bool startServer() {
 
     if ( context ) {
-        printf("startServer called when context already exists!\n");
+        g_log.log(LL_WARN, "startServer called when context already exists!\n");
         return false;
     }
 
-    printf("Starting server... ");
+    //g_log.log(LL_INFO, "Starting server... ");
 
     context = zmq_ctx_new();
     zmq_ctx_set( context, ZMQ_IO_THREADS, 2 );
 
     if ( ! context ) {
-        printf("zmq_ctx_new failed: %d (%s)\n", errno, strerror(errno));
+        g_log.log(LL_ERROR, "zmq_ctx_new failed: %d (%s)\n", errno, strerror(errno));
         return false;
     }
 
     publisher = zmq_socket(context, ZMQ_PUB);
     if ( ! publisher ) {
-        printf("zmq_socket failed, publisher: %d (%s)\n", errno, strerror(errno));
+        g_log.log(LL_ERROR, "zmq_socket failed, publisher: %d (%s)\n", errno, strerror(errno));
         return false;
     }
 
     int rc = zmq_bind(publisher, "tcp://*:5561");
     if ( rc != 0 ) {
-        printf("zmq_bind failed, publisher: %d (%s)\n", errno, strerror(errno));
+        g_log.log(LL_ERROR, "zmq_bind failed, publisher: %d (%s)\n", errno, strerror(errno));
 
         zmq_close(publisher);
         zmq_ctx_destroy(context);
@@ -60,7 +60,7 @@ bool startServer() {
 
     replier = zmq_socket(context, ZMQ_REP);
     if ( ! replier ) {
-        printf("zmq_socket failed, replier: %d (%s)\n", errno, strerror(errno));
+        g_log.log(LL_ERROR, "zmq_socket failed, replier: %d (%s)\n", errno, strerror(errno));
 
         zmq_close(publisher);
         zmq_ctx_destroy(context);
@@ -70,7 +70,7 @@ bool startServer() {
 
     rc = zmq_bind(replier, "tcp://*:5562");
     if ( rc != 0 ) {
-        printf("zmq_bind failed, replier: %d (%s)\n", errno, strerror(errno));
+        g_log.log(LL_ERROR, "zmq_bind failed, replier: %d (%s)\n", errno, strerror(errno));
 
         zmq_close(replier);
         zmq_close(publisher);
@@ -79,7 +79,7 @@ bool startServer() {
         return false;
     }
 
-    printf("done\n");
+    g_log.log(LL_INFO, "Started server");
 
     startSocketMonitor(publisher);
 
@@ -88,7 +88,7 @@ bool startServer() {
 
 void stopServer() {
 
-    printf("Stopping server... ");
+    //printf("Stopping server... ");
 
     zmq_close (replier);
     zmq_close (publisher);
@@ -102,7 +102,7 @@ void stopServer() {
     // Still need to join the monitor thread
     stopSocketMonitor();
 
-    printf("done\n");
+    g_log.log(LL_INFO, "Stopped server");
 }
 
 bool checkCommandRequests(commandMessageType_e* msgType, commandRequest_t* req, CommandList* program) {
@@ -125,12 +125,12 @@ bool checkCommandRequests(commandMessageType_e* msgType, commandRequest_t* req, 
 
         zmq_msg_t msg;
         if ( 0 != zmq_msg_init(&msg) ) {
-            printf("zmq_msg_init failed\n");
+            g_log.log(LL_ERROR, "zmq_msg_init failed\n");
         }
         else {
             int rc = zmq_msg_recv( &msg, replier, 0);
             if ( rc == -1 ) {
-                printf("zmq_msg_recv for replier failed: %d (%s)\n", errno, strerror(errno));
+                g_log.log(LL_ERROR, "zmq_msg_recv for replier failed: %d (%s)\n", errno, strerror(errno));
             }
             else {
                 didRecv = true;
@@ -397,13 +397,13 @@ void publishStatus(motionStatus *s, motionLimits currentMoveLimits, motionLimits
 
     zmq_msg_t msg;
     if ( 0 != zmq_msg_init_size(&msg, sizeof(apr))) {
-         printf("zmq_msg_init_size failed\n");
+         g_log.log(LL_ERROR, "zmq_msg_init_size failed\n");
          return;
     }
 
     memcpy( zmq_msg_data(&msg), &apr, sizeof(apr) );
 
     if ( sizeof(apr) != zmq_msg_send( &msg, publisher, 0 ) ) {
-        printf("zmq_msg_send failed\n");
+        g_log.log(LL_ERROR, "zmq_msg_send failed\n");
     }
 }

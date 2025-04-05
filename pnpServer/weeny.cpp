@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "bcm2835.h"
+#include "rpispi.h"
 #include "weeny.h"
 
 #define STEPBIT				22			// bit location in DDS accum
@@ -234,7 +235,7 @@ void spi_transfer()
     prepareTxData();
 
     // send and receive data to and from the weeny PRU concurrently
-    bcm2835_spi_transfernb( (char*)&txData, (char*)&rxData, sizeof(commPacket_t) );
+    rpispi_transfernb( (char*)&txData, (char*)&rxData, sizeof(commPacket_t) );
 
     processRxData();
 }
