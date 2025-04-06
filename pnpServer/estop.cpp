@@ -6,6 +6,8 @@
 #include "estop.h"
 #include "weeny.h"
 
+#include "log.h"
+
 using namespace scv;
 
 planner estopPlanner;
@@ -17,7 +19,7 @@ void initEstop() {
 
     float currentVelMag = v.Length();
     if ( currentVelMag > 0.00001 ) {
-        printf("Creating estop move: velmag: %f\n", currentVelMag);
+        //g_log.log(LL_DEBUG, "Creating estop move: velmag: %f\n", currentVelMag);
 
         //estopRotate.src = rots[0];
         //estopRotate.dst = rots[0];
@@ -36,14 +38,14 @@ void initEstop() {
 
         estopPlanner.calculateMoves();
         //estopPlanner.addOffsetToMoves(offsetAtHome);
-        printf("estop move:\n");
-        estopPlanner.printMoves();
+        //g_log.log(LL_DEBUG, "estop move:\n");
+        //estopPlanner.printMoves();
 
         currentTraj = &estopPlanner;
         motionMode = MM_TRAJECTORY;
     }
     else {
-        printf("estop: already stopped (currentVelMag = %f)\n", currentVelMag);
+        //g_log.log(LL_DEBUG, "estop: already stopped (currentVelMag = %f)\n", currentVelMag);
         currentTraj = NULL;
         motionMode = MM_NONE;
     }

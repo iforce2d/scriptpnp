@@ -74,20 +74,8 @@ void RTThread::Run() noexcept {
     //pid_t threadId = syscall(__NR_gettid);
     //printf("RTThread id = %d\n", threadId);
 
-    // Map the RPi BCM2835 peripherals - uses "rtapi_open_as_root" in place of "open"
-    /*if (!rt_bcm2835_init())
-    {
-        printf("rt_bcm2835_init failed. Are you running as root?\n");
-        return;
-    }
-
-    if ( ! bcm2835_setupSPI() ) {
-        printf("bcm2835_setupSPI failed.\n");
-        return;
-    }*/
-
     if ( ! rpispi_init() ) {
-        printf("RTThread returning!\n");
+        g_log.log(LL_ERROR, "RTThread returning!");
         return;
     }
 
@@ -97,7 +85,7 @@ void RTThread::Run() noexcept {
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_wakeup_time_, NULL);
     }
 
-    printf("RTThread exiting\n");
+    g_log.log(LL_DEBUG, "RTThread exiting");
 }
 
 void RTThread::Loop() noexcept {

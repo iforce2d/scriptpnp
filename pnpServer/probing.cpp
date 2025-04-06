@@ -7,7 +7,7 @@
 #include "weeny.h"
 #include "../common/config.h"
 #include "../common/machinelimits.h"
-#include "loadcell.h"
+#include "movingAverage.h"
 
 using namespace scv;
 
@@ -24,6 +24,7 @@ float probing_targetZ = 0; // max depth / probe limit
 uint16_t pressureBeforeSniff = 0;
 uint16_t probing_vac_baseline = 0;
 bool probing_vac_contacted = false;
+bool isLoadcellTriggered = false;
 
 extern motionStatus mStatus;
 
@@ -35,10 +36,10 @@ bool isProbeTriggered()
             return true;
     }
     else if ( probing_type == PT_LOADCELL ) {
-        if ( probing_minForce == 0 )
+        //if ( probing_minForce == 0 )
             return isLoadcellTriggered;
-        else if ( getWeight() > probing_minForce )
-            return true;
+        /*else if ( getWeight() > probing_minForce )
+            return true;*/
     }
     return false;
 }
@@ -437,3 +438,78 @@ bool checkProbingStartConditions() {
 
     return true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+// ---------------- load cell stuff below ----------------
+
+extern motionMode_e motionMode;
+
+int32_t loadcellCalibrationRawOffset = 1000;
+float loadcellCalibrationWeight = 100;
+
+MovingAverage<int32_t, 200> baselineMA;    // 1 sec
+//MovingAverage<int32_t,   2> measurementMA; // 0.01 sec
+
+void resetLoadcell() {
+    baselineMA.reset();
+    //measurementMA.reset();
+}
+
+void updateLoadcell(int32_t loadCellRaw) {
+
+    isLoadcellTriggered = false;
+
+    int fullCount = baselineMA.getReadingCount();
+
+    // always use for baseline if just started
+    if ( baselineMA.getNumReadingsTaken() < fullCount ) {
+        baselineMA.addReading(loadCellRaw);
+        //measurementMA.reset();
+        return;
+    }
+
+    /*if ( baselineMA.getNumReadingsTaken() == fullCount ) {
+        //baselineRange = baselineMA.getRange();
+        g_log.log(LL_INFO, "Load cell baselineRange: %f", baselineMA.getRange());
+    }*/
+
+    float avg = baselineMA.getAverage();
+    float threshold = avg + probingParams.loadcellTriggerThreshold;
+
+    isLoadcellTriggered =
+        ( probingParams.loadcellTriggerThreshold > 0 && loadCellRaw > threshold ) ||
+        ( probingParams.loadcellTriggerThreshold < 0 && loadCellRaw < threshold );
+
+    // only update baseline while not probing, or during first approach which tends to be longer and baseline slowly moves
+    bool allowBaselineAdjustment =
+        (motionMode == MM_NONE) ||
+        (motionMode == MM_PROBING && probing_phase == PP_APPROACH1);
+    if ( allowBaselineAdjustment ) {
+        //bool b =
+        baselineMA.addReading(loadCellRaw);
+        /*if ( b ) {
+            // periodically output to log
+            g_log.log(LL_INFO, "Adjusted load cell baseline: %f", avg);
+        }*/
+        //measurementMA.reset();
+        //return;
+    }
+
+    //measurementMA.addReading(loadCellRaw);
+}
+
+float getLoadCellBaseline() {
+    return baselineMA.getAverage();
+}
+
+

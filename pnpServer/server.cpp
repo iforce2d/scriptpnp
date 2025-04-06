@@ -314,11 +314,11 @@ void processCommandReply(commandRequest_t* req, bool ackOrNack) {
         sendPackable(MT_CONFIG_OVERRIDES_FETCH, overrideConfigSet);
         return; // send is already done
     }
-    else if ( req->type == MT_CONFIG_LOADCELL_CALIB_FETCH || req->type == MT_CONFIG_LOADCELL_CALIB_SET ) {
+    /*else if ( req->type == MT_CONFIG_LOADCELL_CALIB_FETCH || req->type == MT_CONFIG_LOADCELL_CALIB_SET ) {
         rep.type = MT_CONFIG_LOADCELL_CALIB_FETCH; // a 'set' will also reply with the same reply as 'fetch'
         rep.loadcellCalib.rawOffset = loadcellCalibrationRawOffset;
         rep.loadcellCalib.weight = loadcellCalibrationWeight;
-    }
+    }*/
     else if ( req->type == MT_CONFIG_PROBING_FETCH || req->type == MT_CONFIG_PROBING_SET ) {
         rep.type = MT_CONFIG_PROBING_FETCH; // a 'set' will also reply with the same reply as 'fetch'
         rep.probingParams.params = probingParams;
@@ -356,6 +356,7 @@ void processCommandReply(commandRequest_t* req, bool ackOrNack) {
 void publishStatus(motionStatus *s, motionLimits currentMoveLimits, motionLimits currentRotationLimits, float speedScale, float jogSpeedScale, float weight, float probingZ)
 {
     clientReport_t apr;
+    apr.messageVersion = MESSAGE_VERSION;
     apr.spiOk = s->spiOk;
     apr.mode = s->mode;
     apr.homingResult = s->homingResult;
@@ -379,7 +380,7 @@ void publishStatus(motionStatus *s, motionLimits currentMoveLimits, motionLimits
 
     apr.speedScale = speedScale;
     apr.jogSpeedScale = jogSpeedScale;
-    apr.weight = weight;
+    apr.weight = s->loadcell - weight;
 
     apr.probedHeight = probingZ;
 

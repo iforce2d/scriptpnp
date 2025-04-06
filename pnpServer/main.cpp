@@ -32,7 +32,6 @@
 #include "estop.h"
 #include "homing.h"
 #include "probing.h"
-#include "loadcell.h"
 
 //#include "zhelpers.h"
 
@@ -194,6 +193,8 @@ void checkJogStart() {
     }
 }
 
+vec3 maxFreq = vec3_zero;
+
 void setFrequencyOutputs() {
 
     float advanceTime = 0.001 * rtCommand.speedScale;
@@ -238,6 +239,10 @@ void setFrequencyOutputs() {
         vel_cmd = vel_cmd * data.pos_scale[i];
 
         data.freq[i] = vel_cmd;
+
+        float avc = fabsf(vel_cmd);
+        if ( avc > maxFreq[i] )
+            maxFreq[i] = avc;
     }
 
 //    if ( data.outputs & 0x1 ) {
@@ -646,7 +651,7 @@ bool LockMemory() {
     int ret = mlockall(MCL_CURRENT | MCL_FUTURE);
     if (ret) {
         //throw std::runtime_error{std::string("mlockall failed: ") + std::strerror(errno)};
-        printf("mlockall failed: %s\n", strerror(errno));
+        g_log.log(LL_FATAL, "mlockall failed: %s\n", strerror(errno));
         return false;
     }
     return true;
@@ -680,7 +685,7 @@ void setRotateDefaults(scv::rotate &r) {
 
 void sigint_handler(int sig){
     pid_t threadId = syscall(__NR_gettid);
-    printf("Thread %d caught signal %d\n", threadId, sig);
+    g_log.log(LL_DEBUG, "Thread %d caught signal %d", threadId, sig);
     sigInt = true;
 }
 
@@ -699,7 +704,7 @@ void reportActualPosition(int numReports, motionStatus& s, bool force) {
     long long timeSinceLastPublish = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastPublishTime).count();
 
     if ( force || timeSinceLastPublish > 12 ) {
-        publishStatus( &s, currentMoveLimits, currentRotationLimits[0], speedScale, jogSpeedScale, getWeight(), probing_resultHeight );
+        publishStatus( &s, currentMoveLimits, currentRotationLimits[0], speedScale, jogSpeedScale, getLoadCellBaseline(), probing_resultHeight );
         lastPublishTime = now;
     }
 
@@ -923,7 +928,10 @@ int main() {
 
     backupConfig();
 
-    LockMemory();
+    if ( !LockMemory() ) {
+        g_log.log(LL_FATAL, "Could not lock memory!");
+        return -1;
+    }
 
     resetConfig();
     readConfigFile();
@@ -1700,7 +1708,7 @@ int main() {
 
                 saveConfigToFile();
             }
-            else if ( req.type == MT_CONFIG_LOADCELL_CALIB_FETCH ) {
+            /*else if ( req.type == MT_CONFIG_LOADCELL_CALIB_FETCH ) {
 
             }
             else if ( msgType == MT_CONFIG_LOADCELL_CALIB_SET ) {
@@ -1712,7 +1720,7 @@ int main() {
                 g_log.log(LL_INFO, "Load cell calib weight set to %f", loadcellCalibrationWeight);
 
                 saveConfigToFile();
-            }
+            }*/
             else if ( req.type == MT_CONFIG_PROBING_FETCH ) {
 
             }
@@ -1727,6 +1735,11 @@ int main() {
                     probingParams.digitalTriggerState = req.probingParams.params.digitalTriggerState;
                     g_log.log(LL_INFO, "Probing digital trigger state set to %d", probingParams.digitalTriggerState);
                 }
+
+                //if ( req.probingParams.params.loadcellTriggerThreshold >= 0 && req.probingParams.params.loadcellTriggerThreshold <= 15 ) {
+                    probingParams.loadcellTriggerThreshold = req.probingParams.params.loadcellTriggerThreshold;
+                    g_log.log(LL_INFO, "Probing load cell trigger threshold set to %d", probingParams.loadcellTriggerThreshold);
+                //}
 
                 if ( req.probingParams.params.vacuumSniffPin >= 0 && req.probingParams.params.vacuumSniffPin <= 15 ) {
                     probingParams.vacuumSniffPin = req.probingParams.params.vacuumSniffPin;
@@ -1856,6 +1869,7 @@ int main() {
     rtReportCheck(&mStatus);
     g_log.log(LL_INFO, "Exiting with position %f, %f, %f", mStatus.actualPos.x, mStatus.actualPos.y, mStatus.actualPos.z);
     g_log.log(LL_INFO, "maxFollowError %f, %f, %f", maxFollowError.x, maxFollowError.y, maxFollowError.z);
+    g_log.log(LL_INFO, "maxFreq %f, %f, %f", maxFreq.x, maxFreq.y, maxFreq.z);
 
 
 #ifdef DO_ZMQ

@@ -31,4 +31,8 @@ void startProbe();
 void doProbingUpdate();
 bool checkProbingStartConditions();
 
+void resetLoadcell();
+void updateLoadcell(int32_t loadCellRaw);
+float getLoadCellBaseline();
+
 #endif

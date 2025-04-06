@@ -65,6 +65,7 @@ void initHomingParams(homingParams_t& p) {
 void initProbingParams(probingParams_t& p) {
     p.digitalTriggerPin = -1;
     p.digitalTriggerState = -1;
+    p.loadcellTriggerThreshold = 100000;
     p.vacuumStep = 0.1;
     p.vacuumSniffPin = -1;
     p.vacuumSniffState = 1;
@@ -655,6 +656,7 @@ bool readConfigFile()
         Json::Value probingParamsValue = fileValue[CONFIG_PROBING_PARAMS];
         probingParams.digitalTriggerPin = probingParamsValue.get("digitalTriggerPin", -1).asInt();
         probingParams.digitalTriggerState = probingParamsValue.get("digitalTriggerState", 1).asInt();
+        probingParams.loadcellTriggerThreshold = probingParamsValue.get("loadcellTriggerThreshold", 100000).asInt();
         probingParams.vacuumStep = probingParamsValue.get("vacuumStep", 0.5).asFloat();
         probingParams.approachspeed1 = probingParamsValue["approachspeed1"].asFloat();
         probingParams.approachspeed2 = probingParamsValue["approachspeed2"].asFloat();
@@ -666,7 +668,8 @@ bool readConfigFile()
         probingParams.vacuumReplenishTimeMs = probingParamsValue.get("vacuumReplenishTimeMs", 500).asInt();
 
         g_log.log(LL_DEBUG, "Config: probing digital trigger pin = %d", probingParams.digitalTriggerPin);
-        g_log.log(LL_DEBUG, "Config: probing digital trigger state = %d", probingParams.digitalTriggerState);        
+        g_log.log(LL_DEBUG, "Config: probing digital trigger state = %d", probingParams.digitalTriggerState);
+        g_log.log(LL_DEBUG, "Config: probing load cell trigger threshold = %d", probingParams.loadcellTriggerThreshold);
         g_log.log(LL_DEBUG, "Config: probing vacuum sniff pin = %d", probingParams.vacuumSniffPin);
         g_log.log(LL_DEBUG, "Config: probing vacuum sniff state = %d", probingParams.vacuumSniffState);
         g_log.log(LL_DEBUG, "Config: probing vacuum sniff time = %d", probingParams.vacuumSniffTimeMs);
@@ -807,6 +810,7 @@ bool saveConfigToFile()
     Json::Value probingParamsValue;
     probingParamsValue["digitalTriggerPin"] = probingParams.digitalTriggerPin;
     probingParamsValue["digitalTriggerState"] = probingParams.digitalTriggerState;
+    probingParamsValue["loadcellTriggerThreshold"] = probingParams.loadcellTriggerThreshold;
     probingParamsValue["vacuumStep"] = probingParams.vacuumStep;
     probingParamsValue["approachspeed1"] = probingParams.approachspeed1;
     probingParamsValue["approachspeed2"] = probingParams.approachspeed2;
