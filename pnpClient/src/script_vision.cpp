@@ -75,7 +75,7 @@ void freeAsyncFrameBuffer() {
 
 #define GET_THREAD_CONTEXT_ELSE \
     visionContext_t* ctx = getVisionContextForThread();\
-    videoFrameBuffers_t* b = ctx->buffers;\
+    videoFrameBuffers_t* b = ctx ? ctx->buffers : NULL;\
     if ( ! b || ! b->rgbData )
 
 
@@ -1765,7 +1765,7 @@ CScriptArray* script_findQRCodes(int howMany) {
 
     auto image = ZXing::ImageView(b->rgbData, b->width, b->height, ZXing::ImageFormat::RGB);
     auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Any);
-    options.setTryHarder( false );
+    options.setTryHarder( true );
     options.setTryInvert( false );
     options.setMaxNumberOfSymbols( howMany );
     //options.setFormats( BarcodeFormat::MicroQRCode | BarcodeFormat::QRCode );
@@ -1777,8 +1777,8 @@ CScriptArray* script_findQRCodes(int howMany) {
     for (auto&& barcode : barcodes) {
 
         script_qrcode* p = static_cast<script_qrcode*>(arr->At(arrInd++));
-        snprintf(p->value, 32, "%s", barcode.text().c_str());
-        //p->outline.angle = barcode.orientation() * DEGTORAD;
+        snprintf(p->value, sizeof(p->value), "%s", barcode.text().c_str());
+        p->orientation = barcode.orientation();
 
         int ind = 0;
         for (auto bp : barcode.position()) {

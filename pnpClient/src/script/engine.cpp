@@ -581,6 +581,8 @@ bool setupScriptEngine()
     assert( r >= 0 );
     r = engine->RegisterObjectMethod("qrcode", "vec3 getCenter()", asMETHOD(script_qrcode,getCenter), asCALL_THISCALL);
     assert( r >= 0 );
+    r = engine->RegisterObjectMethod("qrcode", "int getOrientation()", asMETHOD(script_qrcode,getOrientation), asCALL_THISCALL);
+    assert( r >= 0 );
 
     r = engine->RegisterGlobalFunction("qrcode[]@ findQRCodes(int howMany = 1)", asFUNCTION(script_findQRCodes), asCALL_CDECL);
     assert( r >= 0 );

@@ -169,12 +169,13 @@ void vec3_opNeg(asIScriptGeneric * gen);
 
 class script_qrcode {
 public:
-    //script_rotatedRect outline;
     int numPoints;
     int outlinePoints[8];
-    char value[34];
+    char value[64];
+    int orientation;
     std::string getValue() { return value; }
     script_vec3 getCenter();
+    int getOrientation() { return orientation; }
 };
 
 
