@@ -207,6 +207,12 @@ bool setupScriptEngine()
     assert( r >= 0 );
 
 
+    r = engine->RegisterGlobalProperty("const int QR_NORMAL", &script_QR_NORMAL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalProperty("const int QR_MICRO", &script_QR_MICRO);
+    assert( r >= 0 );
+
+
     r = engine->RegisterGlobalFunction("void print(string s)", asFUNCTION(script_print), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void print(string[] &arr)", asFUNCTION(script_printarray_string), asCALL_CDECL);
@@ -584,7 +590,7 @@ bool setupScriptEngine()
     r = engine->RegisterObjectMethod("qrcode", "int getOrientation()", asMETHOD(script_qrcode,getOrientation), asCALL_THISCALL);
     assert( r >= 0 );
 
-    r = engine->RegisterGlobalFunction("qrcode[]@ findQRCodes(int howMany = 1)", asFUNCTION(script_findQRCodes), asCALL_CDECL);
+    r = engine->RegisterGlobalFunction("qrcode[]@ findQRCodes(int howMany = 1, int types = 3)", asFUNCTION(script_findQRCodes), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("void drawQRCode(qrcode &in c, float fontSize = 20)", asFUNCTION(script_drawQRCode), asCALL_CDECL);
     assert( r >= 0 );

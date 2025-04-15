@@ -28,7 +28,6 @@
 using namespace std;
 using namespace ZXing;
 
-
 // There can only be two threads running vision scripts at the same time.
 // A single vision context is held for each thread type (main or async).
 // The context values persist between script calls, so for example a call
@@ -1750,7 +1749,10 @@ CScriptArray* script_findCircles(float diameter) {
     return arr;
 }
 
-CScriptArray* script_findQRCodes(int howMany) {
+int script_QR_NORMAL = 1;
+int script_QR_MICRO  = 2;
+
+CScriptArray* script_findQRCodes(int howMany,int types) {
 
     asITypeInfo* t = GetScriptTypeIdByDecl("array<qrcode>");
 
@@ -1763,12 +1765,18 @@ CScriptArray* script_findQRCodes(int howMany) {
     if ( howMany < 1 )
         howMany = 1;
 
+    int typesFlag = 0;
+    if ( types & script_QR_NORMAL )
+        typesFlag |= (int)ZXing::BarcodeFormat::QRCode;
+    if ( types & script_QR_MICRO )
+        typesFlag |= (int)ZXing::BarcodeFormat::MicroQRCode;
+
     auto image = ZXing::ImageView(b->rgbData, b->width, b->height, ZXing::ImageFormat::RGB);
-    auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Any);
+    auto options = ZXing::ReaderOptions();
     options.setTryHarder( true );
     options.setTryInvert( false );
     options.setMaxNumberOfSymbols( howMany );
-    //options.setFormats( BarcodeFormat::MicroQRCode | BarcodeFormat::QRCode );
+    options.setFormats( (ZXing::BarcodeFormat)typesFlag );
     auto barcodes = ZXing::ReadBarcodes(image, options);
 
     CScriptArray* arr = CScriptArray::Create(t, barcodes.size());

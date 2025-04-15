@@ -22,6 +22,9 @@ extern int script_VP_RED;
 extern int script_VP_GRN;
 extern int script_VP_BLU;
 
+extern int script_QR_NORMAL;
+extern int script_QR_MICRO;
+
 struct videoFrameBuffers_t {
     int width;
     int height;
@@ -147,7 +150,7 @@ script_rotatedRect* script_minAreaRect(float minRatio, float maxRatio, float min
 
 class CScriptArray* script_findCircles(float diameter);
 
-class CScriptArray* script_findQRCodes(int howMany);
+class CScriptArray* script_findQRCodes(int howMany, int types);
 void script_drawQRCode(script_qrcode& q, float fontSize);
 
 void script_drawText(std::string msg, float x, float y, float fontSize);

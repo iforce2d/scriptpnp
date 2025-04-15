@@ -31,7 +31,7 @@ void doNotifiesForProbingResult( int r )
     if ( r == PR_FAIL_CONFIG )
         notify( "Cannot run probing with invalid config", NT_ERROR, 5000 );
     else if ( r == PR_FAIL_NOT_HOMED )
-        notify( "Cannot run probing while not homed", NT_ERROR, 5000 );
+        notify( "Cannot run probing while Z axis not homed", NT_ERROR, 5000 );
     else if ( r == PR_FAIL_NOT_TRIGGERED )
         notify( "Probing reached Z limit without contacting", NT_WARNING, 5000 );
     else if ( r == PR_FAIL_ALREADY_TRIGGERED )
