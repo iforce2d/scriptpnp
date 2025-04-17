@@ -4,6 +4,7 @@
 
 #include "db.h"
 #include "log.h"
+#include "notify.h"
 
 using namespace std;
 
@@ -100,6 +101,9 @@ bool executeDatabaseStatement(std::string statement, dbRowCallback cb, std::stri
     char *zErrMsg = 0;
     int rc = sqlite3_exec(db, statement.c_str(), cb, 0, &zErrMsg);
     if( rc != SQLITE_OK ) {
+        if ( string(zErrMsg) == "database is locked") {
+            notify("SQL error: database is locked", 3, 5000);
+        }
         g_log.log(LL_ERROR, "SQL error: %s", zErrMsg);
         errMsg = "SQL error: " + string(zErrMsg);
         sqlite3_free(zErrMsg);
@@ -181,6 +185,9 @@ bool saveTextToDBFile(string &text, string dbFileType, string path, bool allowOv
                 }
                 else {
                     errMsg = sqlite3_errmsg(db);
+                    if ( string(errMsg) == "database is locked") {
+                        notify("SQL error: database is locked", 3, 5000);
+                    }
                     g_log.log(LL_ERROR, "saveTextToDBFile sqlite3_step failed: %s", errMsg.c_str());
                 }
             }

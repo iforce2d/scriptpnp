@@ -529,10 +529,12 @@ void showTableViews()
                                 bool hasContent = true;
                                 if ( colVal == "NULL" ) {
                                     hasContent = false;
+                                    ImGui::PushID(colNum);
                                     if ( ImGui::Button( ICON_FA_PLUS_SQUARE ) ) {
                                         colVal = "";
                                         hasContent = true;
                                     }
+                                    ImGui::PopID();
                                 }
 
                                 if ( hasContent ) {
