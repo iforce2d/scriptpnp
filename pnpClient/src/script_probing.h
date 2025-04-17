@@ -13,6 +13,6 @@ extern int script_PT_VACUUM;
 
 int script_getProbeResult();
 float script_getProbedHeight();
-void script_probe(float depth, int type, float minForce);
+void script_probe(float depth, int type, bool twoPhase);
 
 #endif // SCRIPT_PROBING_H

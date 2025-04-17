@@ -1095,7 +1095,7 @@ void showProbeSetup() {
         commandRequest_t req = createCommandRequest(MT_PROBE);
         req.probe.type = doProbeType;
         req.probe.z = probeZ;
-        req.probe.minWeight = probeMinWeight;
+        req.probe.flags = PP_SLOW_APPROACH | PP_FAST_APPROACH;
         sendCommandRequest(&req);
         lastProbingResult = PR_NONE;
         lastProbedHeight = 0;

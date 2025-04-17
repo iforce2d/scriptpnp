@@ -24,7 +24,7 @@ float script_getProbedHeight() {
     return lastProbedHeight;
 }
 
-void script_probe(float depth, int type, float minForce)
+void script_probe(float depth, int type, bool twoPhase)
 {
     if ( getActivePreviewOnly() )
         return;
@@ -32,7 +32,9 @@ void script_probe(float depth, int type, float minForce)
     commandRequest_t req = createCommandRequest(MT_PROBE);
     req.probe.type = type;
     req.probe.z = depth;
-    req.probe.minWeight = minForce;
+    req.probe.flags = PP_SLOW_APPROACH;
+    if ( twoPhase )
+        req.probe.flags |= PP_FAST_APPROACH;
 
     lastProbingResult = PR_NONE;
     lastProbedHeight = 0;

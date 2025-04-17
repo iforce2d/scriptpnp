@@ -6,7 +6,7 @@
 
 #include "../common/config.h"
 
-#define MESSAGE_VERSION 3
+#define MESSAGE_VERSION 4
 
 #define NUM_ROTATION_AXES 4
 
@@ -109,6 +109,11 @@ enum probeType_t {
     PT_VACUUM
 };
 
+enum probePhase_t {
+    PP_FAST_APPROACH = 0x1,
+    PP_SLOW_APPROACH = 0x2
+};
+
 typedef struct PACKED {
     uint8_t messageVersion;
     bool spiOk;
@@ -196,8 +201,8 @@ typedef struct PACKED {
 
 typedef struct PACKED {
     uint8_t type;
+    uint8_t flags;
     float z;
-    float minWeight;
 } msg_probe;
 
 

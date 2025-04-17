@@ -577,7 +577,7 @@ bool setupScriptEngine()
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("float getProbedHeight()", asFUNCTION(script_getProbedHeight), asCALL_CDECL);
     assert( r >= 0 );
-    r = engine->RegisterGlobalFunction("void probe(float depth, int type, float minForce = 0)", asFUNCTION(script_probe), asCALL_CDECL);
+    r = engine->RegisterGlobalFunction("void probe(float depth, int type, bool twoPhase = true)", asFUNCTION(script_probe), asCALL_CDECL);
     assert( r >= 0 );
 
 
