@@ -344,7 +344,7 @@ int getNextUntitledPathOfTypeFromDB(std::string dbFileType, std::string &errMsg)
 
     sqlite3_stmt *stmt = NULL;
 
-    vector<int> existingVals;
+    //vector<int> existingVals;
 
     int val = 1;
 
@@ -366,6 +366,26 @@ int getNextUntitledPathOfTypeFromDB(std::string dbFileType, std::string &errMsg)
 int getLastInsertId()
 {
     return (int)sqlite3_last_insert_rowid( db );
+}
+
+bool tableWithColumnExists(std::string table, std::string column)
+{
+    string selectStr = "select "+column+" from "+table+" limit 1";
+
+    sqlite3_stmt *stmt = NULL;
+
+    bool exists = false;
+
+    int rc = sqlite3_prepare_v2( db, selectStr.c_str(), selectStr.length(), &stmt, NULL );
+    if (rc != SQLITE_OK) {
+        exists = false;
+    } else {
+        exists = true;
+    }
+
+    sqlite3_finalize(stmt);
+
+    return exists;
 }
 
 

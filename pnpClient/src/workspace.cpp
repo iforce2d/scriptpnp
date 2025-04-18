@@ -218,6 +218,7 @@ static int loadWorkspace_callback(void *NotUsed, int argc, char **argv, char **a
 #define WW_COMMANDEDITOR    "commandeditor"
 #define WW_SERVER           "server"
 #define WW_SERIAL           "serial"
+#define WW_DBTABLES         "dbtables"
 
 void saveWorkspaceToDB_windowsOpen(string layoutTitle)
 {
@@ -235,6 +236,7 @@ void saveWorkspaceToDB_windowsOpen(string layoutTitle)
     if ( getNumOpenCommandEditorWindows() ) internalsVec.push_back( WW_COMMANDEDITOR );
     if ( show_server_view ) internalsVec.push_back( WW_SERVER );
     if ( show_serial_view ) internalsVec.push_back( WW_SERIAL );
+    if ( show_table_views ) internalsVec.push_back( WW_DBTABLES );
 
     string internalsStr = joinStringVec(internalsVec, ",");
     string tablesStr = joinStringVec(getOpenTableNames(), ",");
@@ -304,6 +306,7 @@ bool loadWorkspaceFromDB_windowsOpen(string layoutTitle)
             show_tweaks_view = stringVecContains( currentLayout.internalWindows, WW_TWEAKS );
             show_server_view = stringVecContains( currentLayout.internalWindows, WW_SERVER );
             show_serial_view = stringVecContains( currentLayout.internalWindows, WW_SERIAL );
+            show_table_views = stringVecContains( currentLayout.internalWindows, WW_DBTABLES );
 
             ensureNScriptEditorWindowsOpen( stringVecContains( currentLayout.internalWindows, WW_SCRIPTEDITOR ) ? 1 : 0 );
             ensureNCommandEditorWindowsOpen( stringVecContains( currentLayout.internalWindows, WW_COMMANDEDITOR ) ? 1 : 0 );

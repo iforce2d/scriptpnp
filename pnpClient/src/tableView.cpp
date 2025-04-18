@@ -10,6 +10,7 @@
 #include "db.h"
 #include "workspace.h"
 #include "log.h"
+#include "util.h"
 
 using namespace std;
 
@@ -52,6 +53,10 @@ void fetchTableData(TableData& td)
     vector< vector<string> > tableInfo;
     executeDatabaseStatement_generic(string("PRAGMA table_info(") + td.name + ")", &tableInfo, errMsg);
 
+    td.colNames.clear();
+    td.relations.clear();
+    td.dirty = false;
+
     // find index of the column called 'pk'
     int nameColIndex = -1;
     int typeColIndex = -1;
@@ -75,8 +80,8 @@ void fetchTableData(TableData& td)
             vector<string> row = tableInfo[i];
             if ( row[pkColIndex] == "1" ) {
                 td.primaryKeyColumnIndex = i;
-                break;
             }
+            td.colNames.push_back( row[nameColIndex] );
         }
     }
 
@@ -107,8 +112,8 @@ void fetchTableData(TableData& td)
     vector<vector<string> > grid;
     executeDatabaseStatement_generic(string("select * from ") + td.name, &grid, errMsg);
     if ( ! grid.empty() ) {
-        td.colNames = grid[0];
-        grid.erase( grid.begin() );
+        //td.colNames = grid[0];
+        grid.erase( grid.begin() ); // skip names row
     }
 
     td.grid.clear();
@@ -120,6 +125,39 @@ void fetchTableData(TableData& td)
             rowCells.push_back(cell);
         }
         td.grid.push_back( rowCells );
+    }
+
+    // find relation columns
+    for (int i = 0; i < (int)td.colNames.size(); i++) {
+        TableRelation tr;
+        string colName = td.colNames[i];
+        if ( colName.rfind("relation_", 0) == 0 ) {
+            vector<string> parts;
+            if ( 3 == splitStringVec(parts, colName, '_' ) ) {
+                string tableName = parts[1];
+                string columnName = parts[2];
+                if ( tableWithColumnExists(tableName, columnName) ) {
+                    tr.otherTableName = tableName;
+                    tr.otherTableColumn = columnName;
+                }
+            }
+        }
+        td.relations.push_back( tr );
+    }
+
+    //for (int i = 0; i < td.relations.size(); i++) {
+    for (TableRelation& tr : td.relations) {
+        if ( tr.otherTableColumn.empty() )
+            continue;
+        grid.clear();
+        executeDatabaseStatement_generic(string("select id,")+tr.otherTableColumn+" from "+tr.otherTableName, &grid, errMsg);
+        grid.erase( grid.begin() ); // skip names row
+        for (vector<string>& rowStrs : grid) {
+            TableRelationRow trr;
+            trr.id = atoi( rowStrs[0].c_str() );
+            trr.value = rowStrs[1];
+            tr.otherTableEntries.push_back( trr );
+        }
     }
 }
 
@@ -434,18 +472,23 @@ void showTableViews()
             //ImGui::InputInt( "Pad x", &padx );
             //ImGui::InputInt( "Pad y", &pady );
 
-            int numRows = td.grid.size();
-            if ( numRows > 0 ) {
-                vector<string> &firstRow = td.colNames;
-                int numCols = firstRow.size();
-                if (ImGui::BeginTable("userTable", numCols, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX))
-                {
-                    for (int colNum = 0; colNum < (int)firstRow.size(); colNum++) {
-                        ImGui::TableSetupColumn( firstRow[colNum].c_str(), ImGuiTableColumnFlags_DefaultSort );
+            vector<string> &firstRow = td.colNames;
+            int numCols = firstRow.size();
+            if (ImGui::BeginTable("userTable", numCols, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX))
+            {
+                for (int colNum = 0; colNum < (int)firstRow.size(); colNum++) {
+                    string headerTitle = firstRow[colNum];
+                    TableRelation& tr = td.relations[colNum];
+                    if ( ! tr.otherTableName.empty() ) {
+                        headerTitle = tr.otherTableName + " (rel)";
                     }
+                    ImGui::TableSetupColumn( headerTitle.c_str(), ImGuiTableColumnFlags_DefaultSort );
+                }
 
-                    ImGui::TableHeadersRow();
+                ImGui::TableHeadersRow();
 
+                int numRows = td.grid.size();
+                if ( numRows > 0 ) {
 
                     ImGui::TableNextRow(0, 26);
 
@@ -521,12 +564,44 @@ void showTableViews()
                         for (int colNum = 0; colNum < (int)cols.size(); colNum++) {
                             bool isPrimaryKey = td.primaryKeyColumnIndex == colNum;
                             string &colVal = cols[colNum].text;
+                            TableRelation& tr = td.relations[colNum];
                             ImGui::TableSetColumnIndex(colNum);
-                            if ( colVal.size() > 65535 ) {
+                            if ( ! tr.otherTableName.empty() ) {
+                                ImGui::PushID(colNum);
+
+                                int entryId = atoi(colVal.c_str());
+
+                                bool pushedStyleColor = false;
+                                if ( cols[colNum].dirty ) {
+                                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.5f, 0.2f, 1.0f));
+                                    pushedStyleColor = true;
+                                }
+
+                                if (ImGui::Button( tr.getSelectedDisplayValue(entryId).c_str() ))
+                                    ImGui::OpenPopup("relationPopup");
+                                if (ImGui::BeginPopup("relationPopup")) {
+                                    for (int entryNum = 0; entryNum < tr.otherTableEntries.size(); entryNum++) {
+                                        TableRelationRow& trr = tr.otherTableEntries[entryNum];
+                                        if (ImGui::Selectable(trr.value.c_str())) {
+                                            cols[colNum].text = to_string(trr.id);
+                                            cols[colNum].dirty = true;
+                                            td.dirty = true;
+                                        }
+                                    }
+                                    ImGui::EndPopup();
+                                }
+
+                                if ( pushedStyleColor )
+                                    ImGui::PopStyleColor(1);
+
+                                ImGui::PopID();
+                            }
+                            else if ( colVal.size() > 65535 ) {
                                 ImGui::Text( "(too large)" );
                             }
                             else {
                                 bool hasContent = true;
+
                                 if ( colVal == "NULL" ) {
                                     hasContent = false;
                                     ImGui::PushID(colNum);
@@ -611,10 +686,10 @@ void showTableViews()
 
                         ImGui::PopID();
                     }
-                    ImGui::EndTable();
 
                     //ImGui::PopStyleVar(1);
                 }
+                ImGui::EndTable();
             }
         }
 

@@ -23,6 +23,26 @@ public:
     }
 };
 
+class TableRelationRow {
+public:
+    int id;
+    std::string value;
+};
+
+class TableRelation {
+public:
+    std::string otherTableName;
+    std::string otherTableColumn;
+    std::vector<TableRelationRow> otherTableEntries;
+    std::string getSelectedDisplayValue(int id) {
+        for (TableRelationRow& trr : otherTableEntries) {
+            if ( trr.id == id )
+                return trr.value;
+        }
+        return "(invalid id: "+std::to_string(id)+")";
+    }
+};
+
 class TableData {
 public:
     std::string name;
@@ -32,6 +52,7 @@ public:
     std::vector< std::vector<TableCell> > grid;
     std::vector<std::string> filters;
     std::vector<bool> badRegex;
+    std::vector<TableRelation> relations;
     bool dirty;
 
     TableData() {

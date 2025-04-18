@@ -28,4 +28,6 @@ int loadAllTextOfTypeFromDBFile(std::vector<dbTextFileInfo> &entries, std::strin
 int getLastInsertId();
 int getNextUntitledPathOfTypeFromDB(std::string dbFileType, std::string &errMsg);
 
+bool tableWithColumnExists(std::string table, std::string column);
+
 #endif // DB_H
