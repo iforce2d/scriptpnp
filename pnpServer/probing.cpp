@@ -20,6 +20,7 @@ int probing_phase_vacuum_sniffCount = 0;
 float probing_resultHeight = 0; // final answer
 float probing_minForce = 0;
 float probing_targetZ = 0; // max depth / probe limit
+int probing_flags = 0;
 
 uint16_t pressureBeforeSniff = 0;
 uint16_t probing_vac_baseline = 0;
@@ -176,10 +177,15 @@ void startProbe() {
 
     g_log.log(LL_DEBUG,"startProbe");
 
-    probing_phase = PP_APPROACH1;
     probing_phase_vacuum = PPVA_SNIFFING;
     probing_vac_contacted = false;
     probing_phase_vacuum_sniffCount = 0;
+    probing_phase = PP_APPROACH1;
+
+    if ( probing_type == PT_LOADCELL || probing_type == PT_DIGITAL ) {
+        if ( (rtCommand.probeFlags & PP_FAST_APPROACH) == 0 ) // only do slow approach
+            probing_phase = PP_APPROACH2;
+    }
 
     prepareProbingPlanner();
 }
@@ -390,13 +396,13 @@ bool checkProbingStartConditions() {
         return false;
     }
 
-    if ( rtCommand.probeType == (PT_LOADCELL+1) ) {
+    /*if ( rtCommand.probeType == (PT_LOADCELL+1) ) {
         if ( rtCommand.probeWeight < 0 ) {
             g_log.log(LL_INFO, "probing: invalid weight for loadcell probe");
             probing_result = PR_FAIL_CONFIG;
             return false;
         }
-    }
+    }*/
 
     if ( rtCommand.probeType == (PT_VACUUM+1) ) {
         if ( probingParams.vacuumSniffPin >= 16 ) {
@@ -423,7 +429,7 @@ bool checkProbingStartConditions() {
     }
 
     // this is used in isProbeTriggered, so set first
-    probing_minForce = rtCommand.probeWeight;
+    //probing_minForce = rtCommand.probeWeight;
 
     // for vaccum sniff, how to know if it's already touching?
 

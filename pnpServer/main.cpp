@@ -1799,7 +1799,7 @@ int main() {
                     // this +1 is because the mCmd.probeType is a value like PT_DIGITAL but we want it to be 1-indexed
                     mCmd.probeType = req.probe.type + 1;
                     mCmd.probeZ = req.probe.z;
-                    mCmd.probeWeight = req.probe.minWeight;
+                    mCmd.probeFlags = req.probe.flags;
 
                     mCmd.traj = NULL;
                     shouldSendRTCommand = true;

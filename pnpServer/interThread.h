@@ -56,7 +56,7 @@ typedef struct motionCommand {
 
     uint8_t probeType; // 1 indexed, so 0 = skip. Non-zero will start probing
     float probeZ;
-    float probeWeight;
+    int probeFlags;
 
     uint16_t outputBits;
     uint16_t outputChanged;
