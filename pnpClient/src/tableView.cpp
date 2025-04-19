@@ -11,6 +11,7 @@
 #include "workspace.h"
 #include "log.h"
 #include "util.h"
+#include "notify.h"
 
 using namespace std;
 
@@ -205,6 +206,20 @@ void saveTableData(TableData* td) {
                 td->dirty = false; // assume if one row is written successfully they all will be
             }
         }
+    }
+}
+
+void addNewTableRow(string tableName) {
+    string errMsg;
+    if ( ! executeDatabaseStatement_generic(string("insert into ") + tableName + "(id) values (null)", NULL, errMsg) ) {
+        notify("Error adding row: "+errMsg+"\n(Table must have auto-increment row called 'id' and no 'not null' columns)", 3, 5000);
+    }
+}
+
+void deleteTableRow(string tableName, string pkColumnName, string pkValToDelete) {
+    string errMsg;
+    if ( ! executeDatabaseStatement_generic(string("delete from ") + tableName + " where "+ pkColumnName +" = '"+pkValToDelete+"'", NULL, errMsg) ) {
+        notify("Error deleting row: "+errMsg, 3, 5000);
     }
 }
 
@@ -530,12 +545,17 @@ void showTableViews()
                         td.badRegex[colNum] = false;
                     }
 
+                    int numCols = 0;
+
+                    string rowPKIDForDelete;
+
                     for (int rowNum = 0; rowNum < (int)td.grid.size(); rowNum++)
                     {
                         vector<TableCell> &cols = td.grid[rowNum];
+                        numCols = cols.size();
 
                         bool filterOk = true;
-                        for (int colNum = 0; colNum < (int)cols.size(); colNum++) {
+                        for (int colNum = 0; colNum < numCols; colNum++) {
                             string &filterVal = td.filters[colNum];
                             if ( filterVal.empty() )
                                 continue;
@@ -561,8 +581,9 @@ void showTableViews()
                         // Draw our contents
                         ImGui::PushID(rowNum);
 
-                        for (int colNum = 0; colNum < (int)cols.size(); colNum++) {
+                        for (int colNum = 0; colNum < numCols; colNum++) {
                             bool isPrimaryKey = td.primaryKeyColumnIndex == colNum;
+                            string rowPKID;
                             string &colVal = cols[colNum].text;
                             TableRelation& tr = td.relations[colNum];
                             ImGui::TableSetColumnIndex(colNum);
@@ -580,7 +601,7 @@ void showTableViews()
                                 if (ImGui::Button( tr.getSelectedDisplayValue(entryId).c_str() ))
                                     ImGui::OpenPopup("relationPopup");
                                 if (ImGui::BeginPopup("relationPopup")) {
-                                    for (int entryNum = 0; entryNum < tr.otherTableEntries.size(); entryNum++) {
+                                    for (int entryNum = 0; entryNum < (int)tr.otherTableEntries.size(); entryNum++) {
                                         TableRelationRow& trr = tr.otherTableEntries[entryNum];
                                         if (ImGui::Selectable(trr.value.c_str())) {
                                             cols[colNum].text = to_string(trr.id);
@@ -613,6 +634,9 @@ void showTableViews()
                                 }
 
                                 if ( hasContent ) {
+
+                                    ImRect rect = ImGui::TableGetCellBgRect( table, colNum );
+
                                     ImGui::PushID(colNum);
                                     if ( isPrimaryKey ) {
                                         ImGui::BeginDisabled();
@@ -620,12 +644,16 @@ void showTableViews()
                                         ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 0xFF303030, colNum);
                                         ImGui::AlignTextToFramePadding();
                                         ImGui::Text( colVal.c_str() );
+
+                                        if ( /*ImGui::IsWindowHovered(ImGuiHoveredFlags_None) &&*/ ImGui::IsMouseHoveringRect(rect.Min, rect.Max, false) ) {
+                                            rowPKIDForDelete = colVal;
+                                        }
+
                                         //ImGui::PopStyleColor();
                                         ImGui::EndDisabled();
                                     }
                                     else {
 
-                                        ImRect rect = ImGui::TableGetCellBgRect( table, colNum );
 
                                         if ( ImGui::IsWindowHovered(ImGuiHoveredFlags_None) && ImGui::IsMouseHoveringRect(rect.Min, rect.Max, false) ) {
                                             cols[colNum].active = true;
@@ -682,15 +710,46 @@ void showTableViews()
                                     ImGui::PopID();
                                 }
                             }
+
+                            // if (ImGui::TableGetColumnFlags(rowNum) & ImGuiTableColumnFlags_IsHovered)
+                            //     rowPKIDForDelete = rowPKID;
                         }
 
                         ImGui::PopID();
                     }
 
-                    //ImGui::PopStyleVar(1);
+                    if ( td.primaryKeyColumnIndex >= 0 ) {
+                        string pkColumnName = td.colNames[td.primaryKeyColumnIndex];
+                        ImGui::PushID( td.primaryKeyColumnIndex );
+                        static string pkidToDelete; // static so it is preserved for the duration of the popup
+                        if ( (ImGui::TableGetColumnFlags(td.primaryKeyColumnIndex) & ImGuiTableColumnFlags_IsHovered) && !ImGui::IsAnyItemHovered() && ImGui::IsMouseReleased(1)) {
+                            pkidToDelete = rowPKIDForDelete;
+                            ImGui::OpenPopup("MyPopup");
+                        }
+                        if (ImGui::BeginPopup("MyPopup")) {
+                            //ImGui::Text("This is a custom popup for Column %d", column);
+                            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+                            if (ImGui::Button("Delete row")) {
+                                deleteTableRow( td.name, pkColumnName, pkidToDelete );
+                                tablesToRefresh.push_back( td.name );
+                                ImGui::CloseCurrentPopup();
+                            }
+                            ImGui::PopStyleColor(2);
+                            ImGui::EndPopup();
+                        }
+                        ImGui::PopID();
+                    }
+
                 }
+
                 ImGui::EndTable();
             }
+        }
+
+        if ( ImGui::Button("New row") ) {
+            addNewTableRow( td.name );
+            tablesToRefresh.push_back( td.name );
         }
 
         doLayoutSave(windowPrefix);
