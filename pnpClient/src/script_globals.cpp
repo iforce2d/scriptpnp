@@ -9,6 +9,8 @@ using namespace std;
 
 map<string, float> globalValuesMap;
 map<string, string> globalStringMap;
+map<string, script_vec3> globalVec3Map;
+map<string, script_affine> globalAffineMap;
 
 void script_setMemoryValue(string name, float v)
 {
@@ -176,9 +178,49 @@ bool script_haveDBValue(string name)
 
 
 
+void script_setMemoryVec3(string name, script_vec3& v)
+{
+    if ( getActivePreviewOnly() )
+        return;
+
+    globalVec3Map[name] = v;
+}
+
+script_vec3 script_getMemoryVec3(string name)
+{
+    map<string, script_vec3>::iterator it = globalVec3Map.find(name);
+    if ( it == globalVec3Map.end() )
+        return script_vec3();
+    return it->second;
+}
+
+bool script_haveMemoryVec3(string name)
+{
+    return globalVec3Map.find(name) != globalVec3Map.end();
+}
 
 
 
+void script_setMemoryAffine(string name, script_affine& v)
+{
+    if ( getActivePreviewOnly() )
+        return;
+
+    globalAffineMap[name] = v;
+}
+
+script_affine script_getMemoryAffine(string name)
+{
+    map<string, script_affine>::iterator it = globalAffineMap.find(name);
+    if ( it == globalAffineMap.end() )
+        return script_affine();
+    return it->second;
+}
+
+bool script_haveMemoryAffine(string name)
+{
+    return globalAffineMap.find(name) != globalAffineMap.end();
+}
 
 
 

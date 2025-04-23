@@ -1125,7 +1125,7 @@ void vec3_opNeg(asIScriptGeneric * gen) {
 
 script_vec3 &script_vec3::operator=(const script_vec3 &other)
 {
-    x = other.z;
+    x = other.x;
     y = other.y;
     z = other.z;
     return *this;
@@ -1273,6 +1273,16 @@ script_affine::script_affine(const script_vec3 a0, const script_vec3 a1, const s
         };*/
 }
 
+script_affine &script_affine::operator=(const script_affine &other)
+{
+    valid = other.valid;
+    memcpy(matrix, other.matrix, sizeof(matrix));
+    rotation = other.rotation;
+    scaleX = other.scaleX;
+    scaleY = other.scaleY;
+    return *this;
+}
+
 void script_affine::gaussEliminate() {
     int N = 6;
     for (int i = 0; i < N; i++) {
@@ -1334,7 +1344,8 @@ script_vec3 script_affine::transform(const script_vec3 &p) {
 }
 
 string script_affine::str() {
-    return "a11 = " + to_string(matrix[0][6]) + ", a12 = " + to_string(matrix[1][6]) + ", tx = " + to_string(matrix[2][6]) +
+    return  string("valid = ") + (valid?"true":"false") +
+           ", a11 = " + to_string(matrix[0][6]) + ", a12 = " + to_string(matrix[1][6]) + ", tx = " + to_string(matrix[2][6]) +
            ", a21 = " + to_string(matrix[3][6]) + ", a22 = " + to_string(matrix[4][6]) + ", ty = " + to_string(matrix[5][6]) +
            ", rotation = " + to_string(rotation) + ", scaleX = " + to_string(scaleX) + ", scaleY = " + to_string(scaleY);
 }

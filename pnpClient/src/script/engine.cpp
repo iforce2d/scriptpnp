@@ -519,6 +519,12 @@ bool setupScriptEngine()
     assert( r >= 0 );
 
 
+    r = engine->RegisterGlobalFunction("void setMemoryVec3(string name, vec3 &in val)", asFUNCTION(script_setMemoryVec3), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("vec3 getMemoryVec3(string name)", asFUNCTION(script_getMemoryVec3), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("bool haveMemoryVec3(string name)", asFUNCTION(script_haveMemoryVec3), asCALL_CDECL);
+    assert( r >= 0 );
 
 
     r = engine->RegisterGlobalFunction("vec3 getActualPos()", asFUNCTION(script_getActualPos), asCALL_CDECL);
@@ -626,6 +632,12 @@ bool setupScriptEngine()
     r = engine->RegisterGlobalFunction("void print(affine &in)", asFUNCTION(script_print_affine), asCALL_CDECL);
     assert( r >= 0 );
 
+    r = engine->RegisterGlobalFunction("void setMemoryAffine(string name, affine &in val)", asFUNCTION(script_setMemoryAffine), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("affine getMemoryAffine(string name)", asFUNCTION(script_getMemoryAffine), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("bool haveMemoryAffine(string name)", asFUNCTION(script_haveMemoryAffine), asCALL_CDECL);
+    assert( r >= 0 );
 
     return true;
 }
