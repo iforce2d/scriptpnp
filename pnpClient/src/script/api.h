@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <cstring>
 #include <scriptarray/scriptarray.h>
 
 extern int script_MM_NONE;
@@ -195,6 +196,29 @@ public:
     std::string get_str();
 };
 
+class script_affine {
+public:
+    bool valid;
+    float matrix[6][7];
+    float rotation;
+    float scaleX;
+    float scaleY;
+
+    script_affine() {
+        valid = false;
+        memset(matrix, 0, sizeof(matrix));
+        scaleX = 1;
+        scaleY = 1;
+        rotation = 0;
+    }
+    script_affine(const script_vec3 a0, const script_vec3 a1, const script_vec3 a2,
+                  const script_vec3 b0, const script_vec3 b1, const script_vec3 b2);
+    void gaussEliminate();
+    script_vec3 transform(const script_vec3& p);
+    std::string str();
+
+};
+
 
 void script_print(std::string &msg);
 void script_printarray_string( void* array );
@@ -246,6 +270,7 @@ std::string script_str_float(float f);
 std::string script_str_vec3(script_vec3 &v);
 void script_print_vec3(script_vec3 &v);
 void script_print_serialReply(script_serialReply &r);
+void script_print_affine(script_affine &a);
 
 void script_exit();
 

@@ -96,6 +96,11 @@ void vec3_initConstructor(float x, float y, float z, script_vec3 *self)
     new(self) script_vec3(x,y,z);
 }
 
+void affine_initConstructor(script_vec3 a0, script_vec3 a1, script_vec3 a2, script_vec3 b0, script_vec3 b1, script_vec3 b2, script_affine *self)
+{
+    new(self) script_affine(a0, a1, a2, b0, b1, b2);
+}
+
 
 float script_DEGTORAD = DEGTORAD;
 float script_RADTODEG = RADTODEG;
@@ -601,6 +606,25 @@ bool setupScriptEngine()
     assert( r >= 0 );
 
 
+    r = engine->RegisterObjectType("affine", sizeof(script_affine), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS | asOBJ_APP_CLASS_ALLFLOATS  );
+    assert( r >= 0 );
+    r = engine->RegisterObjectBehaviour("affine", asBEHAVE_CONSTRUCT, "void f(vec3 a0, vec3 a1, vec3 a2, vec3 b0, vec3 b1, vec3 b2)", asFUNCTION(affine_initConstructor), asCALL_CDECL_OBJLAST);
+    assert( r >= 0 );
+    r = engine->RegisterObjectProperty("affine", "bool valid", offsetof(script_affine,valid));
+    assert( r >= 0 );
+    r = engine->RegisterObjectProperty("affine", "float rotation", offsetof(script_affine,rotation));
+    assert( r >= 0 );
+    r = engine->RegisterObjectProperty("affine", "float scaleX", offsetof(script_affine,scaleX));
+    assert( r >= 0 );
+    r = engine->RegisterObjectProperty("affine", "float scaleY", offsetof(script_affine,scaleY));
+    assert( r >= 0 );
+    r = engine->RegisterObjectMethod("affine", "vec3 transform(vec3 &in)", asMETHOD(script_affine,transform), asCALL_THISCALL);
+    assert( r >= 0 );
+    r = engine->RegisterObjectMethod("affine", "string str()", asMETHOD(script_affine,str), asCALL_THISCALL);
+    assert( r >= 0 );
+
+    r = engine->RegisterGlobalFunction("void print(affine &in)", asFUNCTION(script_print_affine), asCALL_CDECL);
+    assert( r >= 0 );
 
 
     return true;

@@ -961,10 +961,18 @@ void script_print_vec3(script_vec3 &v)
 {
     ScriptLog* log = (ScriptLog*)getActiveScriptLog();
     if ( log ) {
-        string x = fformat(v.x, 8);
-        string y = fformat(v.y, 8);
-        string z = fformat(v.z, 8);
+        //string x = fformat(v.x, 8);
+        //string y = fformat(v.y, 8);
+        //string z = fformat(v.z, 8);
         log->log(LL_INFO, NULL, 0, "%s", script_str_vec3(v).c_str());
+    }
+}
+
+void script_print_affine(script_affine &a)
+{
+    ScriptLog* log = (ScriptLog*)getActiveScriptLog();
+    if ( log ) {
+        log->log(LL_INFO, NULL, 0, "%s", a.str().c_str());
     }
 }
 
@@ -1202,7 +1210,134 @@ void script_exit() {
 
 
 
+script_affine::script_affine(const script_vec3 a0, const script_vec3 a1, const script_vec3 a2,
+                             const script_vec3 b0, const script_vec3 b1, const script_vec3 b2) {
 
+    matrix[0][0] = a0.x;
+    matrix[0][1] = a0.y;
+    matrix[0][2] = 1;
+    matrix[0][3] = 0;
+    matrix[0][4] = 0;
+    matrix[0][5] = 0;
+    matrix[0][6] = b0.x;
+
+    matrix[1][0] = 0;
+    matrix[1][1] = 0;
+    matrix[1][2] = 0;
+    matrix[1][3] = a0.x;
+    matrix[1][4] = a0.y;
+    matrix[1][5] = 1;
+    matrix[1][6] = b0.y;
+
+    matrix[2][0] = a1.x;
+    matrix[2][1] = a1.y;
+    matrix[2][2] = 1;
+    matrix[2][3] = 0;
+    matrix[2][4] = 0;
+    matrix[2][5] = 0;
+    matrix[2][6] = b1.x;
+
+    matrix[3][0] = 0;
+    matrix[3][1] = 0;
+    matrix[3][2] = 0;
+    matrix[3][3] = a1.x;
+    matrix[3][4] = a1.y;
+    matrix[3][5] = 1;
+    matrix[3][6] = b1.y;
+
+    matrix[4][0] = a2.x;
+    matrix[4][1] = a2.y;
+    matrix[4][2] = 1;
+    matrix[4][3] = 0;
+    matrix[4][4] = 0;
+    matrix[4][5] = 0;
+    matrix[4][6] = b2.x;
+
+    matrix[5][0] = 0;
+    matrix[5][1] = 0;
+    matrix[5][2] = 0;
+    matrix[5][3] = a2.x;
+    matrix[5][4] = a2.y;
+    matrix[5][5] = 1;
+    matrix[5][6] = b2.y;
+
+    gaussEliminate();
+
+    /*matrix = {
+            {a0.x, a0.y, 1, 0, 0, 0, b0.x},
+            {0, 0, 0, a0.x, a0.y, 1, b0.y},
+            {a1.x, a1.y, 1, 0, 0, 0, b1.x},
+            {0, 0, 0, a1.x, a1.y, 1, b1.y},
+            {a2.x, a2.y, 1, 0, 0, 0, b2.x},
+            {0, 0, 0, a2.x, a2.y, 1, b2.y}
+        };*/
+}
+
+void script_affine::gaussEliminate() {
+    int N = 6;
+    for (int i = 0; i < N; i++) {
+        // Find the maximum element for pivoting
+        float maxVal = matrix[i][i];
+        int row = i;
+        for (int j = i+1; j < N; j++) {
+            if (abs(matrix[j][i]) > abs(maxVal)) {
+                maxVal = matrix[j][i];
+                row = j;
+            }
+        }
+
+        // Swap rows
+        if (row != i) {
+            float tmp[7];
+            memcpy(tmp, matrix[i], sizeof(matrix[i]));
+            memcpy(matrix[i], matrix[row], sizeof(matrix[i]));
+            memcpy(matrix[row], tmp, sizeof(matrix[i]));
+        }
+
+        // Eliminate column below pivot
+        for (int j = i+1; j < N; j++) {
+            float factor = matrix[j][i] / matrix[i][i];
+            for (int k = i; k <= N; k++) {
+                matrix[j][k] -= factor * matrix[i][k];
+            }
+        }
+    }
+
+    // Back substitution
+    for (int i = N-1; i >= 0; i--) {
+        for (int j = i+1; j < N; j++) {
+            matrix[i][N] -= matrix[i][j] * matrix[j][N];
+        }
+        matrix[i][N] /= matrix[i][i];
+    }
+
+
+    float a11 = matrix[0][6];
+    float a12 = matrix[1][6];
+    float a21 = matrix[3][6];
+    float a22 = matrix[4][6];
+
+    // extract rotation
+    rotation = atan2(a21, a11) * RADTODEG;
+    scaleX = sqrt(a11 * a11 + a21 * a21);
+    scaleY = sqrt(a12 * a12 + a22 * a22);
+
+    valid = true;
+}
+
+script_vec3 script_affine::transform(const script_vec3 &p) {
+    script_vec3 t;
+    t.z = 0;
+    t.x = matrix[0][6] * p.x + matrix[1][6] * p.y + matrix[2][6];
+    t.y = matrix[3][6] * p.x + matrix[4][6] * p.y + matrix[5][6];
+    return t;
+}
+
+string script_affine::str() {
+    return "a11 = " + to_string(matrix[0][6]) + ", a12 = " + to_string(matrix[1][6]) + ", tx = " + to_string(matrix[2][6]) +
+           ", a21 = " + to_string(matrix[3][6]) + ", a22 = " + to_string(matrix[4][6]) + ", ty = " + to_string(matrix[5][6]) +
+           ", rotation = " + to_string(rotation) + ", scaleX = " + to_string(scaleX) + ", scaleY = " + to_string(scaleY);
+}
 
 
 
