@@ -600,20 +600,33 @@ void showTableViews()
 
                                 if (ImGui::Button( tr.getSelectedDisplayValue(entryId).c_str() ))
                                     ImGui::OpenPopup("relationPopup");
+
+                                if ( pushedStyleColor )
+                                    ImGui::PopStyleColor(1);
+
                                 if (ImGui::BeginPopup("relationPopup")) {
+
+                                    string oldVal = cols[colNum].text;
+
+                                    if (ImGui::Selectable("##0")) {
+                                        cols[colNum].text = "NULL";
+                                        bool dirty = cols[colNum].text != oldVal;
+                                        cols[colNum].dirty = dirty;
+                                        td.dirty = dirty;
+                                    }
+
                                     for (int entryNum = 0; entryNum < (int)tr.otherTableEntries.size(); entryNum++) {
                                         TableRelationRow& trr = tr.otherTableEntries[entryNum];
                                         if (ImGui::Selectable(trr.value.c_str())) {
                                             cols[colNum].text = to_string(trr.id);
-                                            cols[colNum].dirty = true;
-                                            td.dirty = true;
+                                            bool dirty = cols[colNum].text != oldVal;
+                                            cols[colNum].dirty = dirty;
+                                            td.dirty = dirty;
                                         }
                                     }
+
                                     ImGui::EndPopup();
                                 }
-
-                                if ( pushedStyleColor )
-                                    ImGui::PopStyleColor(1);
 
                                 ImGui::PopID();
                             }

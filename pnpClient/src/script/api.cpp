@@ -114,7 +114,9 @@ dbResult* script_dbQuery(string &query)
     return res;
 }
 
-
+int script_getLastInsertId() {
+    return getLastInsertId();
+}
 
 void setLongest( vector<string> &strs, vector<size_t> &lengths) {
     for (int k = 0; k < (int)strs.size(); k++) {

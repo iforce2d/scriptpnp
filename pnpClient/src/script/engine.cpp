@@ -272,6 +272,8 @@ bool setupScriptEngine()
 
     r = engine->RegisterGlobalFunction("dbResult@ dbQuery(string sql)", asFUNCTION(script_dbQuery), asCALL_CDECL);
     assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("int getLastInsertId()", asFUNCTION(script_getLastInsertId), asCALL_CDECL);
+    assert( r >= 0 );
 
     r = engine->RegisterGlobalFunction("bool runCommand(string cmd)", asFUNCTION(script_runCommand), asCALL_CDECL);
     assert( r >= 0 );

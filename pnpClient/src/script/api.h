@@ -203,6 +203,7 @@ std::string script_strDictionaryKeys( void* dict );
 std::string script_strDictionary( void* dict );
 
 dbResult *script_dbQuery(std::string &query);
+int script_getLastInsertId();
 dbResult *script_dbResultFactory();
 dbRow *script_dbRowFactory();
 script_serialReply *script_serialReplyFactory();
