@@ -152,6 +152,8 @@ void fetchTableData(TableData& td)
             continue;
         grid.clear();
         executeDatabaseStatement_generic(string("select id,")+tr.otherTableColumn+" from "+tr.otherTableName, &grid, errMsg);
+        if ( grid.empty() )
+            continue; // nothing in the table being referenced
         grid.erase( grid.begin() ); // skip names row
         for (vector<string>& rowStrs : grid) {
             TableRelationRow trr;
@@ -609,7 +611,7 @@ void showTableViews()
                                     string oldVal = cols[colNum].text;
 
                                     if (ImGui::Selectable("##0")) {
-                                        cols[colNum].text = "NULL";
+                                        cols[colNum].text = "0";
                                         bool dirty = cols[colNum].text != oldVal;
                                         cols[colNum].dirty = dirty;
                                         td.dirty = dirty;
