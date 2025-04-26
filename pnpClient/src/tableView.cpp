@@ -424,10 +424,13 @@ void showTableViews()
 
 
     for ( TableData &td : tableDatas ) {
-        if ( find( tablesToRefresh.begin(), tablesToRefresh.end(), td.name ) != tablesToRefresh.end() )
-            fetchTableData( td );
+        auto thisTableIt = find( tablesToRefresh.begin(), tablesToRefresh.end(), td.name );
+        if ( thisTableIt != tablesToRefresh.end() ) {
+            tablesToRefresh.erase( thisTableIt );
+            fetchTableData( td );            
+        }
     }
-    tablesToRefresh.clear();
+    //tablesToRefresh.clear();
 
 
     for ( TableData &td : tableDatas ) {
