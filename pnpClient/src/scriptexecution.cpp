@@ -172,14 +172,17 @@ bool getIsRunningScriptThread() {
     return isRunningScriptThread;
 }
 
-bool runScript(string moduleName, string funcName, bool previewOnly, void *codeEditorWindow)
+bool runScript(string moduleName, string funcName, bool previewOnly, void *codeEditorWindow, scriptParams_t *params)
 {
     if ( currentlyRunningScriptThread() )
         return false;
 
     compiledScript_t compiled;
 
-    if ( ! compileScript(moduleName, funcName, compiled, codeEditorWindow) )
+    if ( ! compileScript(moduleName, compiled, codeEditorWindow) )
+        return false;
+
+    if ( ! setScriptFunc(compiled, funcName, params, codeEditorWindow) )
         return false;
 
     planGroup_preview.clear();
@@ -193,7 +196,7 @@ bool runScript(string moduleName, string funcName, bool previewOnly, void *codeE
 
     scriptStartTime = std::chrono::steady_clock::now();
 
-    bool ok = runCompiledFunction(compiled, previewOnly, codeEditorWindow);
+    bool ok = runCompiledFunction(compiled, previewOnly, codeEditorWindow, params);
 
     std::chrono::steady_clock::time_point scriptEndTime =   std::chrono::steady_clock::now();
 
@@ -223,7 +226,55 @@ bool runScript(string moduleName, string funcName, bool previewOnly, void *codeE
     return true;
 }
 
-bool compileScript(string moduleName, string funcName, compiledScript_t &compiled, void *codeEditorWindow)
+bool setScriptFunc(compiledScript_t &compiled, string funcName, scriptParams_t *params, void *codeEditorWindow) {
+
+    string funcSig = "void main()";
+
+    if ( ! funcName.empty() ) {
+        if ( params ) {
+            funcSig = "void " + funcName + "(";
+
+            vector<string> paramSigs;
+            for ( scriptParam_t& p : params->paramList ) {
+                if ( p.type == SPT_INT ) {
+                    paramSigs.push_back( "int" );
+                }
+                else if ( p.type == SPT_STRING ) {
+                    paramSigs.push_back( "string" );
+                }
+            }
+
+            funcSig += joinStringVec( paramSigs, "," );
+
+            funcSig += ")";
+        }
+        else {
+            funcSig = "void " +funcName +"()";
+        }
+    }
+
+    CodeEditorWindow* w = (CodeEditorWindow*)codeEditorWindow;
+    if ( ! w ) {
+        if ( ! scriptEditorWindows.empty() )
+            w = scriptEditorWindows[0];
+    }
+
+    asIScriptFunction *func = compiled.mod->GetFunctionByDecl( funcSig.c_str() );
+    if( ! func )
+    {
+        g_log.log(LL_ERROR, "GetFunctionByDecl failed looking for '%s'", funcSig.c_str());
+        if ( w )
+            w->log.log(LL_ERROR, NULL, 0, "[%s] Could not find entry point '%s'", logPrefixArray[LL_ERROR], funcSig.c_str());
+        discardScriptModule(compiled.mod);
+        return false;
+    }
+
+    compiled.func = func;
+
+    return true;
+}
+
+bool compileScript(string moduleName, compiledScript_t &compiled, void *codeEditorWindow)
 {
     saveAllDocuments(commandDocuments);
 
@@ -275,7 +326,7 @@ bool compileScript(string moduleName, string funcName, compiledScript_t &compile
         return false;
     }
 
-    // string funcName = entryFunction;
+    /*// string funcName = entryFunction;
     if ( funcName.empty() )
         funcName = "main";
     funcName = "void " +funcName +"()";
@@ -289,10 +340,10 @@ bool compileScript(string moduleName, string funcName, compiledScript_t &compile
 
         discardScriptModule(mod);
         return false;
-    }
+    }*/
 
     compiled.mod = mod;
-    compiled.func = func;
+    //compiled.func = func;
 
     return true;
 }
@@ -357,7 +408,7 @@ bool checkScriptRunThreadComplete()
     return false;
 }
 
-bool runCompiledFunction(compiledScript_t &compiled, bool previewOnly, void *codeEditorWindow)
+bool runCompiledFunction(compiledScript_t &compiled, bool previewOnly, void *codeEditorWindow, scriptParams_t *params)
 {
     if ( ! compiled.mod || ! compiled.func ) {
         g_log.log(LL_ERROR, "runCompiledFunction: invalid compiled function");
@@ -383,7 +434,7 @@ bool runCompiledFunction(compiledScript_t &compiled, bool previewOnly, void *cod
         didScriptRunJustComplete = false;
         setIsRunningScriptThread( true );
 
-        scriptThreadStartupInfo.ctx = createScriptContext(compiled.func);
+        scriptThreadStartupInfo.ctx = createScriptContext(compiled.func, params);
         scriptThreadStartupInfo.mod = compiled.mod;
 
         int ret = pthread_create(&scriptRunThread, NULL, scriptRunThreadFunc, &scriptThreadStartupInfo);
@@ -395,7 +446,7 @@ bool runCompiledFunction(compiledScript_t &compiled, bool previewOnly, void *cod
         return true; // for threaded case, return 'still running' status
     }
 
-    asIScriptContext* ctx = createScriptContext(compiled.func);
+    asIScriptContext* ctx = createScriptContext(compiled.func, params);
 
     executeScriptContext(ctx);
 
@@ -421,7 +472,7 @@ bool runCompiledFunction_simple(compiledScript_t &compiled)
     if ( w )
         setActiveScriptLog(&w->log);
 
-    asIScriptContext* ctx = createScriptContext(compiled.func);
+    asIScriptContext* ctx = createScriptContext(compiled.func, NULL);
     int r = ctx->Execute();
     if ( r == asEXECUTION_EXCEPTION )
         g_log.log(LL_ERROR, "Exception occurred while executing script: %s", ctx->GetExceptionString());

@@ -46,3 +46,8 @@ std::string fformat(float d, int precision)
     return string(buf);
 }
 
+
+bool stringStartsWith(std::string str, std::string withWhat)
+{
+    return str.rfind(withWhat, 0) == 0;
+}

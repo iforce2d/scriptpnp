@@ -2401,7 +2401,7 @@ int main(int, char**)
         if ( show_table_views )
             showTableViewSelection(&show_table_views);
 
-        showTableViews();
+        int pressedTableButtonRowId = showTableViews();
 
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.f);
@@ -2437,6 +2437,25 @@ int main(int, char**)
         }
         else
         {
+            if ( pressedTableButtonRowId > 0 ) {
+                saveAllDocuments(commandDocuments);
+                for (CodeEditorDocument* cd : commandDocuments)
+                    cd->clearErrorMarkers();
+
+                scriptParams_t params;
+
+                scriptParam_t p;
+                p.type = SPT_STRING;
+                p.stringVal = pressedTableButtonTable;
+                params.paramList.push_back( p );
+
+                p.type = SPT_INT;
+                p.intVal = pressedTableButtonRowId;
+                params.paramList.push_back( p );
+
+                ::runScript("scriptEditorModule", pressedTableButtonFunc, false, NULL, &params);
+            }
+
             for (int i = 0; i < (int)commandEditorWindows.size(); i++) {
                 CodeEditorWindow* w = commandEditorWindows[i];
 

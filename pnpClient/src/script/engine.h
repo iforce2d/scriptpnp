@@ -29,7 +29,7 @@ std::string getActiveCommandListPath();
 void setActivePreviewOnly(bool b);
 bool getActivePreviewOnly();
 
-asIScriptContext* createScriptContext(asIScriptFunction *func);
+asIScriptContext* createScriptContext(asIScriptFunction *func, class scriptParams_t *params);
 asIScriptContext* getCurrentScriptContext();
 void cleanupScriptContext(asIScriptContext* ctx);
 bool executeScriptContext(asIScriptContext *ctx);

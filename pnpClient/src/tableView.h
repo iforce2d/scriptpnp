@@ -43,6 +43,16 @@ public:
     }
 };
 
+class TableBool {
+public:
+    std::string shortName;
+};
+
+class TableButton {
+public:
+    std::string shortName;
+};
+
 class TableData {
 public:
     std::string name;
@@ -53,6 +63,8 @@ public:
     std::vector<std::string> filters;
     std::vector<bool> badRegex;
     std::vector<TableRelation> relations;
+    std::vector<TableBool> bools;
+    std::vector<TableButton> buttons;
     bool dirty;
 
     TableData() {
@@ -64,12 +76,15 @@ public:
 extern std::vector<std::string> tablesToRefresh;
 extern std::vector<TableData> tableDatas;
 
+extern std::string pressedTableButtonTable;
+extern std::string pressedTableButtonFunc;
+
 void setDesiredOpenTables( std::vector<std::string> which );
 std::vector<std::string> & getOpenTableNames();
 
 void fetchTableNames();
 void showTableViewSelection(bool *p_open);
-void showTableViews();
+int showTableViews();
 
 void script_refreshTableView(std::string which);
 

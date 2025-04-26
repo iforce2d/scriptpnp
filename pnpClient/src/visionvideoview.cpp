@@ -58,7 +58,9 @@ void VisionVideoView::prepareFunction()
 
     char buf[64];
     sprintf(buf, "visionVideoModule%d", cameraInfo->index);
-    compileScript(buf, entryFunction, compiled);
+    if ( compileScript(buf, compiled) ) {
+        setScriptFunc(compiled, entryFunction);
+    }
 }
 
 extern bool script_shouldTryImageLoad;

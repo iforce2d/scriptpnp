@@ -780,10 +780,24 @@ bool buildScriptModule(asIScriptModule* mod)
 
 asIScriptContext *currentScriptContext = NULL;
 
-asIScriptContext *createScriptContext(asIScriptFunction *func)
+asIScriptContext *createScriptContext(asIScriptFunction *func, scriptParams_t *params = NULL)
 {
     asIScriptContext *ctx = engine->CreateContext();
     ctx->Prepare(func);
+
+    if ( params ) {
+        int argPos = 0;
+        for ( scriptParam_t& p : params->paramList ) {
+            if ( p.type == SPT_INT ) {
+                ctx->SetArgDWord( argPos, p.intVal );
+            }
+            else if ( p.type == SPT_STRING ) {
+                ctx->SetArgObject( argPos, &p.stringVal );
+            }
+            argPos++;
+        }
+    }
+
     return ctx;
 }
 

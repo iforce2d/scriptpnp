@@ -54,6 +54,7 @@ void fetchTableData(TableData& td)
     vector< vector<string> > tableInfo;
     executeDatabaseStatement_generic(string("PRAGMA table_info(") + td.name + ")", &tableInfo, errMsg);
 
+    td.primaryKeyColumnIndex = -1;
     td.colNames.clear();
     td.relations.clear();
     td.dirty = false;
@@ -132,7 +133,7 @@ void fetchTableData(TableData& td)
     for (int i = 0; i < (int)td.colNames.size(); i++) {
         TableRelation tr;
         string colName = td.colNames[i];
-        if ( colName.rfind("relation_", 0) == 0 ) {
+        if ( stringStartsWith( colName, "relation_") ) {
             vector<string> parts;
             if ( 3 == splitStringVec(parts, colName, '_' ) ) {
                 string tableName = parts[1];
@@ -144,6 +145,34 @@ void fetchTableData(TableData& td)
             }
         }
         td.relations.push_back( tr );
+    }
+
+    // find bool columns
+    for (int i = 0; i < (int)td.colNames.size(); i++) {
+        TableBool tb;
+        string colName = td.colNames[i];
+        if ( stringStartsWith( colName, "bool_") ) {
+            vector<string> parts;
+            if ( 2 == splitStringVec(parts, colName, '_' ) ) {
+                tb.shortName = parts[1];
+            }
+        }
+        td.bools.push_back( tb );
+    }
+
+    // find button columns
+    if ( td.primaryKeyColumnIndex > -1 ) {
+        for (int i = 0; i < (int)td.colNames.size(); i++) {
+            TableButton tb;
+            string colName = td.colNames[i];
+            if ( stringStartsWith( colName, "button_") ) {
+                vector<string> parts;
+                if ( 2 == splitStringVec(parts, colName, '_' ) ) {
+                    tb.shortName = parts[1];
+                }
+            }
+            td.buttons.push_back( tb );
+        }
     }
 
     //for (int i = 0; i < td.relations.size(); i++) {
@@ -398,8 +427,13 @@ void HelpMarker2(const char* desc)
     }
 }
 
-void showTableViews()
+string pressedTableButtonTable;
+string pressedTableButtonFunc;
+
+int showTableViews()
 {
+    int pressedButtonId = 0;
+
     if ( tableSelectionChanged ) {
         vector<string> tablesToOpen;
         vector<string> tablesToClose;
@@ -499,7 +533,15 @@ void showTableViews()
                 for (int colNum = 0; colNum < (int)firstRow.size(); colNum++) {
                     string headerTitle = firstRow[colNum];
                     TableRelation& tr = td.relations[colNum];
-                    if ( ! tr.otherTableName.empty() ) {
+                    TableBool& tBool = td.bools[colNum];
+                    TableButton& tButton = td.buttons[colNum];
+                    if ( ! tBool.shortName.empty() ) {
+                        headerTitle = tBool.shortName;
+                    }
+                    else if ( ! tButton.shortName.empty() ) {
+                        headerTitle = tButton.shortName;
+                    }
+                    else if ( ! tr.otherTableName.empty() ) {
                         headerTitle = tr.otherTableName + " (rel)";
                     }
                     ImGui::TableSetupColumn( headerTitle.c_str(), ImGuiTableColumnFlags_DefaultSort );
@@ -588,11 +630,49 @@ void showTableViews()
 
                         for (int colNum = 0; colNum < numCols; colNum++) {
                             bool isPrimaryKey = td.primaryKeyColumnIndex == colNum;
-                            string rowPKID;
                             string &colVal = cols[colNum].text;
+                            string colName = td.colNames[colNum];
+                            TableBool& tBool = td.bools[colNum];
+                            TableButton& tButton = td.buttons[colNum];
                             TableRelation& tr = td.relations[colNum];
                             ImGui::TableSetColumnIndex(colNum);
-                            if ( ! tr.otherTableName.empty() ) {
+                            if ( ! tBool.shortName.empty() ) {
+                                bool pushedStyleColor = false;
+                                if ( cols[colNum].dirty ) {
+                                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.45f, 0.25f, 0.1f, 1.0f));
+                                    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.55f, 0.35f, 0.15f, 1.0f));
+                                    ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(0.9f, 0.5f, 0.2f, 1.0f));
+                                    pushedStyleColor = true;
+                                }
+
+                                bool checked = colVal == "1";
+                                bool oldVal = checked;
+                                ImGui::Checkbox("##cb", &checked);
+                                cols[colNum].text = checked ? "1" : "0";
+                                bool dirty = checked != oldVal;
+                                cols[colNum].dirty |= dirty;
+                                td.dirty |= dirty;
+
+                                if ( pushedStyleColor )
+                                    ImGui::PopStyleColor(3);
+                            }
+                            else if ( ! tButton.shortName.empty() ) {
+
+                                ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(25, 105, 0, 220));
+                                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(40, 163, 0, 220));
+
+                                char buf[64];
+                                sprintf( buf, "%s##cbtn", tButton.shortName.c_str() );
+                                if ( ImGui::Button(buf) ) {
+                                    //g_log.log(LL_DEBUG, "%s %s %d %d %s", tButton.shortName.c_str(), td.name.c_str(), rowNum, colNum, td.grid[rowNum][td.primaryKeyColumnIndex].text.c_str());
+                                    pressedButtonId = atoi( td.grid[rowNum][td.primaryKeyColumnIndex].text.c_str() );
+                                    pressedTableButtonTable = td.name;
+                                    pressedTableButtonFunc = tButton.shortName.c_str();
+                                }
+
+                                ImGui::PopStyleColor(2);
+                            }
+                            else if ( ! tr.otherTableName.empty() ) {
                                 ImGui::PushID(colNum);
 
                                 int entryId = atoi(colVal.c_str());
@@ -616,8 +696,8 @@ void showTableViews()
                                     if (ImGui::Selectable("##0")) {
                                         cols[colNum].text = "0";
                                         bool dirty = cols[colNum].text != oldVal;
-                                        cols[colNum].dirty = dirty;
-                                        td.dirty = dirty;
+                                        cols[colNum].dirty |= dirty;
+                                        td.dirty |= dirty;
                                     }
 
                                     for (int entryNum = 0; entryNum < (int)tr.otherTableEntries.size(); entryNum++) {
@@ -625,8 +705,8 @@ void showTableViews()
                                         if (ImGui::Selectable(trr.value.c_str())) {
                                             cols[colNum].text = to_string(trr.id);
                                             bool dirty = cols[colNum].text != oldVal;
-                                            cols[colNum].dirty = dirty;
-                                            td.dirty = dirty;
+                                            cols[colNum].dirty |= dirty;
+                                            td.dirty |= dirty;
                                         }
                                     }
 
@@ -720,8 +800,8 @@ void showTableViews()
                                         else if ( ImGui::IsItemDeactivated() ) {
                                             cols[colNum].active = false;
                                             if ( ImGui::IsItemDeactivatedAfterEdit() ) {
-                                                cols[colNum].dirty = true;
-                                                td.dirty = true;
+                                                cols[colNum].dirty |= true;
+                                                td.dirty |= true;
                                             }
                                         }
                                     }
@@ -775,6 +855,8 @@ void showTableViews()
         ImGui::End();
 
     }
+
+    return pressedButtonId;
 }
 
 void script_refreshTableView(string which) {

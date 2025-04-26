@@ -93,7 +93,7 @@ bool ScriptEditorWindow::runScript(bool previewOnly)
     if ( ! currentlyRunningScriptThread() )
         log.grayOutExistingText();
 
-    return ::runScript("scriptEditorModule", entryFunction, previewOnly);
+    return ::runScript("scriptEditorModule", entryFunction, previewOnly, this);
 }
 
 
