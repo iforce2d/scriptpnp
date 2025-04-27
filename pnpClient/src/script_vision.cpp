@@ -1749,8 +1749,9 @@ CScriptArray* script_findCircles(float diameter) {
     return arr;
 }
 
-int script_QR_NORMAL = 1;
-int script_QR_MICRO  = 2;
+int script_QR_NORMAL        = 0x1;
+int script_QR_MICRO         = 0x2;
+int script_QR_DATAMATRIX    = 0x4;
 
 CScriptArray* script_findQRCodes(int howMany,int types) {
 
@@ -1770,6 +1771,13 @@ CScriptArray* script_findQRCodes(int howMany,int types) {
         typesFlag |= (int)ZXing::BarcodeFormat::QRCode;
     if ( types & script_QR_MICRO )
         typesFlag |= (int)ZXing::BarcodeFormat::MicroQRCode;
+    if ( types & script_QR_DATAMATRIX )
+        typesFlag |= (int)ZXing::BarcodeFormat::DataMatrix;
+
+    if ( typesFlag == 0 ) {
+        CScriptArray* arr = CScriptArray::Create(t, (asUINT)0);
+        return arr;
+    }
 
     auto image = ZXing::ImageView(b->rgbData, b->width, b->height, ZXing::ImageFormat::RGB);
     auto options = ZXing::ReaderOptions();

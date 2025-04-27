@@ -24,6 +24,7 @@ extern int script_VP_BLU;
 
 extern int script_QR_NORMAL;
 extern int script_QR_MICRO;
+extern int script_QR_DATAMATRIX;
 
 struct videoFrameBuffers_t {
     int width;
