@@ -3,6 +3,7 @@
 
 #include <string>
 
+// These are just to match ImGuiToastType_ without having to include "imgui_notify/imgui_notify.h"
 enum notifyType_t {
     NT_NONE,
     NT_SUCCESS,

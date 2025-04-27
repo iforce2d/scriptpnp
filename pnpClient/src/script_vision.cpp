@@ -703,7 +703,11 @@ CScriptArray* script_quickblob(int color, int minpixels, int maxpixels, int minw
         for (int x = lx; x < ux; x++) {
             int i = y*b->width+x;
             rgb_t* rgb = (rgb_t*)&b->rgbData[i*3];
-            b->grayData[gi++] = (rgb->r + rgb->g + rgb->b) > 0 ? 255 : 0;
+            if ( rgb->r > 0 || rgb->g > 0 || rgb->b > 0 )
+                b->grayData[gi] = 255;
+            else
+                b->grayData[gi] = 0;
+            gi++;
         }
     }
 
@@ -1059,6 +1063,9 @@ int script_hsvThreshold(int mh, int hRange, int ls, int us, int lv, int uv)
                 b->rgbData[i+2] = 0;
             }
             else {
+                b->rgbData[i+0] = 255;
+                b->rgbData[i+1] = 255;
+                b->rgbData[i+2] = 255;
                 passed++;
             }
             /*else

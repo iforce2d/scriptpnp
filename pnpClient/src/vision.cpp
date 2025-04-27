@@ -127,7 +127,7 @@ bool runQuickblob(blobRun_t* br) {
     }
 
 
-    std::sort(br->blobs.begin(), br->blobs.end(), compareBlobSize);
+    //std::sort(br->blobs.begin(), br->blobs.end(), compareBlobSize);
 
     //    if ( visionCount++ % 10 == 0 ) {
     //        image->save("threshold.png");

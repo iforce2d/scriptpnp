@@ -125,11 +125,11 @@ bool loadPNG(string filename, int width, int height, uint8_t* bytes)
             bpp = 2;
             useBytes = 1;
             break;
-        case PNG_COLOR_TYPE_RGB: bpp = 3;
+        case PNG_COLOR_TYPE_RGB:
             bpp = 3;
             useBytes = 3;
             break;
-        case PNG_COLOR_TYPE_RGB_ALPHA: bpp = 3;
+        case PNG_COLOR_TYPE_RGB_ALPHA:
             bpp = 4;
             useBytes = 3;
             break;

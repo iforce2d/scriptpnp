@@ -243,14 +243,14 @@ void saveTableData(TableData* td) {
 void addNewTableRow(string tableName) {
     string errMsg;
     if ( ! executeDatabaseStatement_generic(string("insert into ") + tableName + "(id) values (null)", NULL, errMsg) ) {
-        notify("Error adding row: "+errMsg+"\n(Table must have auto-increment row called 'id' and no 'not null' columns)", 3, 5000);
+        notify("Error adding row: "+errMsg+"\n(Table must have auto-increment row called 'id' and no 'not null' columns)", NT_ERROR, 5000);
     }
 }
 
 void deleteTableRow(string tableName, string pkColumnName, string pkValToDelete) {
     string errMsg;
     if ( ! executeDatabaseStatement_generic(string("delete from ") + tableName + " where "+ pkColumnName +" = '"+pkValToDelete+"'", NULL, errMsg) ) {
-        notify("Error deleting row: "+errMsg, 3, 5000);
+        notify("Error deleting row: "+errMsg, NT_ERROR, 5000);
     }
 }
 

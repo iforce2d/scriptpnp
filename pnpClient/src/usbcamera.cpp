@@ -938,7 +938,7 @@ void showUSBCameraControl(bool* p_open)
             }
 
             if ( anyCameraOpen ) {
-                notify( "Please close any open cameras first", 2, 4000 );
+                notify( "Please close any open cameras first", NT_WARNING, 4000 );
             }
             else {
                 usbCameraInfos.clear();
@@ -1142,6 +1142,7 @@ bool grabUSBCameraFrame(int index, videoFrameBuffers_t* buffers) {
             g_log.log(LL_WARN, "grabFrame giving up after 200 milliseconds!");
             return false; // no grab after 200 millseconds
         }
+        retries--;
     }
     if ( retries < 1 ) {
         g_log.log(LL_WARN, "grabFrame giving up after 1000 attempts!");
