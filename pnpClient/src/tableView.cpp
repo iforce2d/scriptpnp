@@ -97,14 +97,14 @@ void fetchTableData_basic(TableData& td) {
     if ( typeColIndex > -1 ) {
         for ( int i = 0; i < (int)tableInfo.size(); i++ ) {
             vector<string> row = tableInfo[i];
-            string typeStr = row[typeColIndex];
-            if ( typeStr == "INTEGER" || typeStr == "INT") {
+            string typeStr = lowerCase( row[typeColIndex] );
+            if ( typeStr == "integer" || typeStr == "int") {
                 td.colTypes.push_back( CDT_INTEGER );
             }
-            else if ( typeStr == "REAL" ) {
+            else if ( typeStr == "real" ) {
                 td.colTypes.push_back( CDT_REAL );
             }
-            else if ( typeStr == "BLOB" ) {
+            else if ( typeStr == "blob" ) {
                 td.colTypes.push_back( CDT_BLOB );
             }
             else

@@ -52,6 +52,11 @@ bool stringStartsWith(std::string str, std::string withWhat)
     return str.rfind(withWhat, 0) == 0;
 }
 
+string lowerCase(string s) {
+    transform( s.begin(), s.end(), s.begin(), ::tolower );
+    return s;
+}
+
 string upperCaseInitial(std::string s)
 {
     string str = string(s);
