@@ -1,4 +1,5 @@
 #include <map>
+#include <regex>
 
 #include "workspace.h"
 #include "db.h"
@@ -6,6 +7,7 @@
 #include "util.h"
 #include "scriptexecution.h"
 #include "tableView.h"
+#include "script_globals.h"
 
 using namespace std;
 
@@ -47,6 +49,8 @@ bool show_tweaks_view = false;
 bool show_server_view = false;
 bool show_serial_view = false;
 bool show_table_views = false;
+bool show_autogen_scripts = false;
+bool show_combobox_entries = false;
 
 string workspaceInfoSaveRequestedTitle = "";
 string workspaceInfoLoadRequestedTitle = "";
@@ -219,6 +223,8 @@ static int loadWorkspace_callback(void *NotUsed, int argc, char **argv, char **a
 #define WW_SERVER           "server"
 #define WW_SERIAL           "serial"
 #define WW_DBTABLES         "dbtables"
+#define WW_DBTABLES_AUTOGEN_SCRIPT      "dbtablesAutogenScript"
+#define WW_COMBOBOX_ENTRIES             "comboboxentries"
 
 void saveWorkspaceToDB_windowsOpen(string layoutTitle)
 {
@@ -237,6 +243,8 @@ void saveWorkspaceToDB_windowsOpen(string layoutTitle)
     if ( show_server_view ) internalsVec.push_back( WW_SERVER );
     if ( show_serial_view ) internalsVec.push_back( WW_SERIAL );
     if ( show_table_views ) internalsVec.push_back( WW_DBTABLES );
+    if ( show_autogen_scripts ) internalsVec.push_back( WW_DBTABLES_AUTOGEN_SCRIPT );
+    if ( show_combobox_entries ) internalsVec.push_back( WW_COMBOBOX_ENTRIES );
 
     string internalsStr = joinStringVec(internalsVec, ",");
     string tablesStr = joinStringVec(getOpenTableNames(), ",");
@@ -307,6 +315,8 @@ bool loadWorkspaceFromDB_windowsOpen(string layoutTitle)
             show_server_view = stringVecContains( currentLayout.internalWindows, WW_SERVER );
             show_serial_view = stringVecContains( currentLayout.internalWindows, WW_SERIAL );
             show_table_views = stringVecContains( currentLayout.internalWindows, WW_DBTABLES );
+            show_autogen_scripts = stringVecContains( currentLayout.internalWindows, WW_DBTABLES_AUTOGEN_SCRIPT );
+            show_combobox_entries = stringVecContains( currentLayout.internalWindows, WW_COMBOBOX_ENTRIES );
 
             ensureNScriptEditorWindowsOpen( stringVecContains( currentLayout.internalWindows, WW_SCRIPTEDITOR ) ? 1 : 0 );
             ensureNCommandEditorWindowsOpen( stringVecContains( currentLayout.internalWindows, WW_COMMANDEDITOR ) ? 1 : 0 );
@@ -539,3 +549,106 @@ void showWorkspaceLayoutOpenDialogPopup()
         ImGui::EndPopup();
     }
 }
+
+#define COMBOBOX_ENTRIES_WINDOW_TITLE "Combobox entries"
+
+string usbCameraFunctionComboboxEntries;
+string tableButtonFunctionEntries;
+
+void showComboboxEntries(bool* p_open) {
+
+    ImGui::SetNextWindowSize(ImVec2(320, 480), ImGuiCond_FirstUseEver);
+
+    doLayoutLoad(COMBOBOX_ENTRIES_WINDOW_TITLE);
+
+    // comma separated alphanumeric string, allow whitespace on either side
+    string regexStr = "^( *[a-zA-Z]\\w* *)(, *[a-zA-Z]\\w* *)*$";
+
+    ImGui::Begin(COMBOBOX_ENTRIES_WINDOW_TITLE, p_open);
+    {
+        char buf[512];
+        std::regex regexPattern( regexStr );
+
+        {
+            ImGui::Text( "USB camera functions" );
+
+            bool regexFailed = false;
+            std::smatch matches;
+            if ( ! std::regex_search(usbCameraFunctionComboboxEntries, matches, regexPattern) ) {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                regexFailed = true;
+            }
+
+            snprintf( buf, sizeof(buf), "%s", usbCameraFunctionComboboxEntries.c_str());
+            ImGui::PushItemWidth(300);
+            ImGui::SameLine();
+            ImGui::InputText( "##camfunc", buf, sizeof(buf) );
+            usbCameraFunctionComboboxEntries = buf;
+
+            if ( regexFailed ) {
+                ImGui::PopStyleColor(1);
+                ImGui::BeginDisabled();
+            }
+
+            ImGui::SameLine();
+            if ( ImGui::Button("Set##usbcam") ) {
+                script_setDBString( DBSTRING_USB_CAMERA_FUNCTIONS, usbCameraFunctionComboboxEntries );
+            }
+
+            if ( regexFailed ) {
+                ImGui::EndDisabled();
+            }
+        }
+
+        {
+            ImGui::Text( "DB table button functions" );
+
+            bool regexFailed = false;
+            std::smatch matches;
+            if ( ! std::regex_search(tableButtonFunctionEntries, matches, regexPattern) ) {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                regexFailed = true;
+            }
+
+            snprintf( buf, sizeof(buf), "%s", tableButtonFunctionEntries.c_str());
+            ImGui::PushItemWidth(300);
+            ImGui::SameLine();
+            ImGui::InputText( "##tablebuttonfunc", buf, sizeof(buf) );
+            tableButtonFunctionEntries = buf;
+
+            if ( regexFailed ) {
+                ImGui::PopStyleColor(1);
+                ImGui::BeginDisabled();
+            }
+
+            ImGui::SameLine();
+            if ( ImGui::Button("Set##tblbutton") ) {
+                script_setDBString( DBSTRING_TABLE_BUTTON_FUNCTIONS, tableButtonFunctionEntries );
+            }
+
+            if ( regexFailed ) {
+                ImGui::EndDisabled();
+            }
+        }
+    }
+
+    doLayoutSave(COMBOBOX_ENTRIES_WINDOW_TITLE);
+
+    ImGui::End();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

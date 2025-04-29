@@ -3,6 +3,10 @@
 #include "script/engine.h"
 #include "visionvideoview.h"
 #include "usbcamera.h"
+#include "util.h"
+#include "workspace.h"
+
+using namespace std;
 
 VisionVideoView::VisionVideoView()
 {
@@ -29,20 +33,36 @@ void VisionVideoView::showLeadingItems(usbCameraInfo_t* info)
     ImGui::SameLine();
     ImGui::Text("Entry function:");
     ImGui::SameLine();
-    ImGui::PushItemWidth(-140);
+    ImGui::PushItemWidth(-145);
+
     ImGui::InputText("##entryFunction", entryFunction, sizeof(entryFunction), ImGuiInputTextFlags_CharsNoBlank);
 
+    bool needPrep = false;
+
     ImGui::SameLine();
-    if ( ImGui::Button("Set") ) {
+    if (ImGui::BeginCombo("##usbCamFuncs", NULL, ImGuiComboFlags_NoPreview))
+    {
+        vector<string> funcs;
+        splitStringVec( funcs, usbCameraFunctionComboboxEntries, ',' );
+        for (int n = 0; n < (int)funcs.size(); n++) {
+            if (ImGui::Selectable(funcs[n].c_str(), false)) {
+                snprintf(entryFunction, sizeof(entryFunction), "%s", funcs[n].c_str());
+                needPrep = true;
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::SameLine();
+    if ( ImGui::Button("Set") || needPrep ) {
         prepareFunction();
     }
 
     ImGui::SameLine();
-    ImGui::Checkbox("Update", &continuousUpdate);
+    ImGui::Checkbox("Apply", &continuousUpdate);
 
     int movingAverage = info->maTotal / (float)PROCESS_TIME_MA_COUNT;
     ImGui::Text("%s %dx%d %.1f fps, processing time: %lld us (avg: %d us)", info->mode.fourcc, info->mode.width, info->mode.height, info->mode.fps, info->frameProcesstime, movingAverage);
-
 
     ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 4 );
 }

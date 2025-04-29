@@ -4,6 +4,10 @@
 #include <string>
 #include "script/api.h"
 
+#define DBSTRING_AUTOGEN_SCRIPT_SELECTION   "internal_autogenScriptTables"
+#define DBSTRING_USB_CAMERA_FUNCTIONS       "internal_usbCameraFunctions"
+#define DBSTRING_TABLE_BUTTON_FUNCTIONS     "internal_dbTableButtonFunctions"
+
 void script_setMemoryValue(std::string name, float v);
 float script_getMemoryValue(std::string name);
 bool script_haveMemoryValue(std::string name);

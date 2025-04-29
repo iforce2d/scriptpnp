@@ -91,7 +91,7 @@ void script_setDBString(string name, string val)
     string sql;
 
     if ( script_haveDBString(name) )
-        sql = "update global_string set value = '"+val+"' where name = '"+name+"'";
+        sql = "update internal_dbstring set value = '"+val+"' where name = '"+name+"'";
     else
         sql = "insert into internal_dbstring (name, value) values ('"+name+"', '"+val+"')";
     executeDatabaseStatement(sql, globalValue_callback, errMsg);

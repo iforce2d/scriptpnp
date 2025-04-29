@@ -51,3 +51,10 @@ bool stringStartsWith(std::string str, std::string withWhat)
 {
     return str.rfind(withWhat, 0) == 0;
 }
+
+string upperCaseInitial(std::string s)
+{
+    string str = string(s);
+    str[0] = toupper(str[0]);
+    return str;
+}

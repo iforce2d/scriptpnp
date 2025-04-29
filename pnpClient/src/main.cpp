@@ -50,6 +50,7 @@
 
 #include "script/engine.h"
 #include "db.h"
+#include "script_globals.h"
 
 #include "codeEditorWindow.h"
 
@@ -81,6 +82,8 @@
 
 #include "notify.h"
 #include "feedback.h"
+
+#include "util.h"
 
 using namespace std;
 using namespace scv;
@@ -1081,6 +1084,19 @@ int main(int, char**)
 
     fetchTableNames();
 
+    if ( script_haveDBString( DBSTRING_AUTOGEN_SCRIPT_SELECTION ) ) {
+        string autogenScriptTables = script_getDBString( DBSTRING_AUTOGEN_SCRIPT_SELECTION );
+        splitStringVec( getAutogenScriptTableNames(), autogenScriptTables, ',' );
+    }
+
+    if ( script_haveDBString( DBSTRING_USB_CAMERA_FUNCTIONS ) ) {
+        usbCameraFunctionComboboxEntries = script_getDBString( DBSTRING_USB_CAMERA_FUNCTIONS );
+    }
+
+    if ( script_haveDBString( DBSTRING_TABLE_BUTTON_FUNCTIONS ) ) {
+        tableButtonFunctionEntries = script_getDBString( DBSTRING_TABLE_BUTTON_FUNCTIONS );
+    }
+
     // {
     //     TableData td;
     //     td.name = "global_string";
@@ -1805,7 +1821,8 @@ int main(int, char**)
 
                 if (ImGui::BeginMenu("DB"))
                 {
-                    ImGui::MenuItem("DB tables", NULL, &show_table_views);
+                    ImGui::MenuItem("View", NULL, &show_table_views);
+                    ImGui::MenuItem("Script auto-gen", NULL, &show_autogen_scripts);
 
                     ImGui::EndMenu();
                 }
@@ -1831,6 +1848,8 @@ int main(int, char**)
                     {
                         doSaveLayoutAs = true;
                     }
+
+                    ImGui::MenuItem("Combobox entries", NULL, &show_combobox_entries);
 
                     ImGui::EndMenu();
                 }
@@ -2400,6 +2419,12 @@ int main(int, char**)
 
         if ( show_table_views )
             showTableViewSelection(&show_table_views);
+
+        /*if ( show_autogen_scripts )
+            showAutogenScriptsSelection(&show_autogen_scripts);*/
+
+        if ( show_combobox_entries )
+            showComboboxEntries( &show_combobox_entries );
 
         int pressedTableButtonRowId = showTableViews();
 

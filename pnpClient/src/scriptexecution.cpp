@@ -13,6 +13,7 @@
 #include "run.h"
 #include "util.h"
 #include "script/api.h"
+#include "tableView.h"
 
 using namespace std;
 
@@ -274,6 +275,175 @@ bool setScriptFunc(compiledScript_t &compiled, string funcName, scriptParams_t *
     return true;
 }
 
+string autogenPrefix = "DB";
+
+extern vector<string> autogenScriptTableNames;
+
+bool appendGeneratedClasses(string moduleName) {
+    /*vector<string> generatedClassTables;
+    generatedClassTables.push_back( "Feeder" );
+    generatedClassTables.push_back( "Feedertype" );
+    generatedClassTables.push_back( "Part" );
+    generatedClassTables.push_back( "Tape" );
+    generatedClassTables.push_back( "Package" );*/
+
+    for (string tableName : autogenScriptTableNames ) {
+
+        TableData td;
+        td.name = tableName;
+        fetchTableData_basic(td);
+
+        tableName = upperCaseInitial(tableName);
+
+        if ( td.primaryKeyColumnIndex > -1 ) {
+            string classDef = "class "+autogenPrefix+tableName+" {\n";
+
+            classDef += "    bool valid;\n";
+
+            // direct member variables
+            for (int i = 0; i < (int)td.colNames.size(); i++) {
+                string colName = td.colNames[i];
+                int colType = td.colTypes[i];
+                if ( colType == CDT_INTEGER ) {
+                    classDef += "    int ";
+                }
+                else if ( colType == CDT_REAL ) {
+                    classDef += "    float ";
+                }
+                else if ( colType == CDT_TEXT ) {
+                    classDef += "    string ";
+                }
+                classDef += colName+";\n";
+            }
+
+            // relation member variables (other auto-generated classes)
+            for (int i = 0; i < (int)td.relations.size(); i++) {
+                TableRelation& tr = td.relations[i];
+                if ( ! tr.otherTableName.empty() ) {
+                    classDef += "    "+autogenPrefix + upperCaseInitial(tr.otherTableName) + " " + tr.otherTableName + ";\n";
+                }
+            }
+
+            // constructor
+            classDef += "    "+autogenPrefix+tableName+"() { valid = false; }\n";
+
+            // str() function
+            classDef += "    string str(bool fullTree = false, string indent = '  ') {\n        return '"+tableName+":'";
+            classDef += "+'\\n'+indent+'valid = '+valid";
+            for (int i = 0; i < (int)td.colNames.size(); i++) {
+                string colName = td.colNames[i];
+                classDef += "+'\\n'+indent+'"+colName+" = '+"+colName;
+            }
+            for (int i = 0; i < (int)td.relations.size(); i++) {
+                TableRelation& tr = td.relations[i];
+                if ( ! tr.otherTableName.empty() ) {
+                    classDef += "+'\\n'+indent+'"+tr.otherTableName+" = '+(fullTree?"+tr.otherTableName+".str(true,indent+indent):'(object)')";
+                }
+            }
+            classDef += ";\n    }\n";
+
+            // save() function
+            classDef += "void save() {\n";
+                classDef += "    string sql = 'replace into "+tableName+" (";
+                classDef += joinStringVec( td.colNames, "," );
+                classDef += ") values ('+";
+                vector<string> vals;
+                for (int i = 0; i < (int)td.colNames.size(); i++) {
+                    string colName = td.colNames[i];
+                    int colType = td.colTypes[i];
+                    if ( colType == CDT_TEXT )
+                        vals.push_back( "'\"'+"+colName+"+'\"'" );
+                    else
+                        vals.push_back( colName );
+                }
+                classDef += joinStringVec( vals, "+','+" );
+                classDef += "+')';\n";
+                //classDef += "    print(sql);\n";
+                classDef += "    dbQuery(sql);\n";
+                classDef += "    refreshTableView('"+tableName+"');\n";
+            classDef += "}\n";
+
+            classDef += "}\n"; // end of class
+
+            // print
+            classDef += "void print("+autogenPrefix+tableName+" obj) { print( obj.str() ); }\n";
+
+            // get by id
+            classDef += autogenPrefix+tableName+" getDB"+tableName+"(int id) {\n";
+            classDef += "    "+autogenPrefix+tableName+" instance;\n";
+            classDef += "    dbResult res = dbQuery('select * from "+tableName+" where id = '+id);\n";
+            classDef += "    if (res.numRows < 1) \n";
+            classDef += "        return instance;\n";
+            classDef += "    dbRow row = res.row(0);\n";
+            for (int i = 0; i < (int)td.colNames.size(); i++) {
+                string colName = td.colNames[i];
+                int colType = td.colTypes[i];
+                if ( colType == CDT_INTEGER )
+                    classDef += "    instance."+colName+" = parseInt( row.col('"+colName+"') );\n";
+                else if ( colType == CDT_REAL )
+                    classDef += "    instance."+colName+" = parseFloat( row.col('"+colName+"') );\n";
+                else if ( colType == CDT_TEXT )
+                    classDef += "    instance."+colName+" = row.col('"+colName+"');\n";
+            }
+            for (int i = 0; i < (int)td.relations.size(); i++) {
+                TableRelation& tr = td.relations[i];
+                if ( ! tr.otherTableName.empty() ) {
+                    classDef += "    instance."+tr.otherTableName+" = getDB"+upperCaseInitial(tr.otherTableName)+"(instance."+tr.fullColumnName+");\n";
+                }
+            }
+            classDef += "    instance.valid = true;\n";
+            classDef += "    return instance;\n";
+            classDef += "}\n";
+
+
+            // get by other column values
+            for (int i = 0; i < (int)td.colNames.size(); i++) {
+                string colName = td.colNames[i];
+                if ( colName == "id" )
+                    continue;
+                int colType = td.colTypes[i];
+                string valType = "int";
+                string val = "val";
+                if ( colType == CDT_REAL )
+                    valType = "float";
+                else if ( colType == CDT_TEXT ) {
+                    valType = "string";
+                    val = "'\"'+val+'\"'";
+                }
+                classDef += autogenPrefix+tableName+" getDB"+tableName+"By"+upperCaseInitial(colName)+"("+valType+" val, bool create = false) {\n";
+                classDef += "    dbResult res = dbQuery('select id from "+tableName+" where "+colName+" = '+"+val+");\n";
+                classDef += "    if (res.numRows < 1) {\n";
+                classDef += "        if ( create ) {\n";
+                classDef += "            string sql = 'insert into "+tableName+" (id,"+colName+") values (NULL,'+"+val+"+')';\n";
+                classDef += "            print(sql);\n";
+                classDef += "            dbQuery(sql);\n";
+                classDef += "            refreshTableView('"+tableName+"');\n";
+                classDef += "            "+autogenPrefix+tableName+" instance;\n";
+                classDef += "            instance.id = getLastInsertId();\n";
+                classDef += "            instance."+colName+" = val;\n";
+                classDef += "            instance.valid = true;\n";
+                classDef += "            return instance;\n";
+                classDef += "        }\n";
+                classDef += "        return "+autogenPrefix+tableName+"();\n";
+                classDef += "    }\n";
+                classDef += "    return getDB"+tableName+"( parseInt(res.row(0).col('id')) );\n";
+                classDef += "}\n";
+            }
+
+
+            printf( classDef.c_str() ); fflush(stdout);
+
+            string sectionName = tableName+"_section";
+            if ( ! addScriptSection(moduleName, sectionName.c_str(), classDef.c_str()) ) {
+                g_log.log(LL_ERROR, "addScriptSection failed for '%s'", sectionName.c_str());
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 bool compileScript(string moduleName, compiledScript_t &compiled, void *codeEditorWindow)
 {
     saveAllDocuments(commandDocuments);
@@ -291,7 +461,14 @@ bool compileScript(string moduleName, compiledScript_t &compiled, void *codeEdit
 
     //string moduleName = "mymodule";
 
+    std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+
     asIScriptModule* mod = createScriptModule(moduleName);
+
+    if ( ! appendGeneratedClasses(moduleName) ) {
+        discardScriptModule(mod);
+        return false;
+    }
 
     vector<string> openDocumentFiles;
     for ( CodeEditorDocument* d : scriptDocuments) {
@@ -317,6 +494,10 @@ bool compileScript(string moduleName, compiledScript_t &compiled, void *codeEdit
 
     bool ok = buildScriptModule(mod);
 
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    long long compileTime = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+    g_log.log(LL_DEBUG, "Script compile time: %lld us", compileTime);
+
     if ( w )
         w->setupErrorMarkers(NULL);
 
@@ -326,24 +507,7 @@ bool compileScript(string moduleName, compiledScript_t &compiled, void *codeEdit
         return false;
     }
 
-    /*// string funcName = entryFunction;
-    if ( funcName.empty() )
-        funcName = "main";
-    funcName = "void " +funcName +"()";
-
-    asIScriptFunction *func = mod->GetFunctionByDecl( funcName.c_str() );
-    if( ! func )
-    {
-        g_log.log(LL_ERROR, "GetFunctionByDecl failed looking for '%s'", funcName.c_str());
-        if ( w )
-            w->log.log(LL_ERROR, NULL, 0, "[%s] Could not find entry point '%s'", logPrefixArray[LL_ERROR], funcName.c_str());
-
-        discardScriptModule(mod);
-        return false;
-    }*/
-
     compiled.mod = mod;
-    //compiled.func = func;
 
     return true;
 }

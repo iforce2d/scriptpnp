@@ -388,7 +388,28 @@ bool tableWithColumnExists(std::string table, std::string column)
     return exists;
 }
 
+bool dbUpdateWhere(string tableName, string colName, string newVal, string whereCol, string whereVal )
+{
+    string statement = "update "+tableName+" set "+colName+" = "+newVal+" where "+whereCol+" = "+whereVal;
 
+    g_log.log(LL_DEBUG, "%s", statement.c_str());
+
+    bool ok = true;
+
+    char *zErrMsg = 0;
+
+    int rc = sqlite3_exec(db, statement.c_str(), genericQuery_callback, 0, &zErrMsg);
+    if( rc != SQLITE_OK ) {
+        if ( string(zErrMsg) == "database is locked") {
+            notify("SQL error: database is locked", 3, 5000);
+        }
+        g_log.log(LL_ERROR, "SQL error: %s", zErrMsg);
+        sqlite3_free(zErrMsg);
+        return false;
+    }
+
+    return ok;
+}
 
 
 

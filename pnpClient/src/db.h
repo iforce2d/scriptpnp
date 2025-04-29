@@ -30,4 +30,6 @@ int getNextUntitledPathOfTypeFromDB(std::string dbFileType, std::string &errMsg)
 
 bool tableWithColumnExists(std::string table, std::string column);
 
+bool dbUpdateWhere(std::string tableName, std::string colName, std::string newVal, std::string whereCol, std::string whereVal );
+
 #endif // DB_H

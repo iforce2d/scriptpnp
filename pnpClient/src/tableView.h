@@ -31,8 +31,9 @@ public:
 
 class TableRelation {
 public:
-    std::string otherTableName;
-    std::string otherTableColumn;
+    std::string fullColumnName;   // eg. relation_part_lcsc
+    std::string otherTableName;   // eg. part
+    std::string otherTableColumn; // eg. lcsc
     std::vector<TableRelationRow> otherTableEntries;
     std::string getSelectedDisplayValue(int id) {
         for (TableRelationRow& trr : otherTableEntries) {
@@ -81,9 +82,12 @@ extern std::string pressedTableButtonFunc;
 
 void setDesiredOpenTables( std::vector<std::string> which );
 std::vector<std::string> & getOpenTableNames();
+std::vector<std::string> & getAutogenScriptTableNames();
 
 void fetchTableNames();
+void fetchTableData_basic(TableData& td);
 void showTableViewSelection(bool *p_open);
+void showAutogenScriptsSelection(bool *p_open);
 int showTableViews();
 
 void script_refreshTableView(std::string which);

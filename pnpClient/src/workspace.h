@@ -29,6 +29,11 @@ extern bool show_tweaks_view;
 extern bool show_server_view;
 extern bool show_serial_view;
 extern bool show_table_views;
+extern bool show_autogen_scripts;
+extern bool show_combobox_entries;
+
+extern std::string usbCameraFunctionComboboxEntries;
+extern std::string tableButtonFunctionEntries;
 
 bool haveCurrentWorkspaceLayout();
 std::string getCurrentLayoutTitle();
@@ -67,5 +72,10 @@ void showWorkspaceLayoutSaveAsDialogPopup(bool openingNow);
 
 void openWorkspaceLayoutOpenDialogPopup();
 void showWorkspaceLayoutOpenDialogPopup();
+
+void showComboboxEntries(bool* p_open);
+
+std::string& getTableButtonFunctionEntries();
+std::string& getUSBCameraFunctionEntries();
 
 #endif // WORKSPACE_H

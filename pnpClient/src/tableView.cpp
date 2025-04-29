@@ -12,16 +12,20 @@
 #include "log.h"
 #include "util.h"
 #include "notify.h"
+#include "script_globals.h"
 
 using namespace std;
 
 #define TABLESLIST_WINDOW_TITLE "DB tables"
+#define AUTOGENSCRIPT_WINDOW_TITLE "Script binding auto-generation"
 
 vector<string> tableNames;
 vector<string> openTableNames;
+vector<string> autogenScriptTableNames;
 vector<std::string> tablesToRefresh;
 vector<TableData> tableDatas;
 bool tableSelectionChanged = false;
+bool autogenScriptSelectionChanged = false;
 
 void setDesiredOpenTables( vector<string> which ) {
     openTableNames = which;
@@ -30,6 +34,10 @@ void setDesiredOpenTables( vector<string> which ) {
 
 vector<string> & getOpenTableNames() {
     return openTableNames;
+}
+
+vector<string> & getAutogenScriptTableNames() {
+    return autogenScriptTableNames;
 }
 
 void fetchTableNames() {
@@ -48,8 +56,7 @@ void fetchTableNames() {
 
 }
 
-void fetchTableData(TableData& td)
-{
+void fetchTableData_basic(TableData& td) {
     string errMsg;
     vector< vector<string> > tableInfo;
     executeDatabaseStatement_generic(string("PRAGMA table_info(") + td.name + ")", &tableInfo, errMsg);
@@ -91,7 +98,7 @@ void fetchTableData(TableData& td)
         for ( int i = 0; i < (int)tableInfo.size(); i++ ) {
             vector<string> row = tableInfo[i];
             string typeStr = row[typeColIndex];
-            if ( typeStr == "INTEGER" ) {
+            if ( typeStr == "INTEGER" || typeStr == "INT") {
                 td.colTypes.push_back( CDT_INTEGER );
             }
             else if ( typeStr == "REAL" ) {
@@ -111,6 +118,48 @@ void fetchTableData(TableData& td)
         td.badRegex.push_back(0);
     }
 
+    // find relation columns
+    for (int i = 0; i < (int)td.colNames.size(); i++) {
+        TableRelation tr;
+        string colName = td.colNames[i];
+        if ( stringStartsWith( colName, "relation_") ) {
+            vector<string> parts;
+            if ( 3 == splitStringVec(parts, colName, '_' ) ) {
+                string tableName = parts[1];
+                string columnName = parts[2];
+                if ( tableWithColumnExists(tableName, columnName) ) {
+                    tr.fullColumnName = colName;
+                    tr.otherTableName = tableName;
+                    tr.otherTableColumn = columnName;
+                }
+            }
+        }
+        td.relations.push_back( tr );
+    }
+
+    //for (int i = 0; i < td.relations.size(); i++) {
+    for (TableRelation& tr : td.relations) {
+        if ( tr.otherTableColumn.empty() )
+            continue;
+        vector<vector<string> > grid;
+        executeDatabaseStatement_generic(string("select id,")+tr.otherTableColumn+" from "+tr.otherTableName, &grid, errMsg);
+        if ( grid.empty() )
+            continue; // nothing in the table being referenced
+        grid.erase( grid.begin() ); // skip names row
+        for (vector<string>& rowStrs : grid) {
+            TableRelationRow trr;
+            trr.id = atoi( rowStrs[0].c_str() );
+            trr.value = rowStrs[1];
+            tr.otherTableEntries.push_back( trr );
+        }
+    }
+}
+
+void fetchTableData(TableData& td)
+{
+    fetchTableData_basic(td);
+
+    string errMsg;
     vector<vector<string> > grid;
     executeDatabaseStatement_generic(string("select * from ") + td.name, &grid, errMsg);
     if ( ! grid.empty() ) {
@@ -127,24 +176,6 @@ void fetchTableData(TableData& td)
             rowCells.push_back(cell);
         }
         td.grid.push_back( rowCells );
-    }
-
-    // find relation columns
-    for (int i = 0; i < (int)td.colNames.size(); i++) {
-        TableRelation tr;
-        string colName = td.colNames[i];
-        if ( stringStartsWith( colName, "relation_") ) {
-            vector<string> parts;
-            if ( 3 == splitStringVec(parts, colName, '_' ) ) {
-                string tableName = parts[1];
-                string columnName = parts[2];
-                if ( tableWithColumnExists(tableName, columnName) ) {
-                    tr.otherTableName = tableName;
-                    tr.otherTableColumn = columnName;
-                }
-            }
-        }
-        td.relations.push_back( tr );
     }
 
     // find bool columns
@@ -172,23 +203,6 @@ void fetchTableData(TableData& td)
                 }
             }
             td.buttons.push_back( tb );
-        }
-    }
-
-    //for (int i = 0; i < td.relations.size(); i++) {
-    for (TableRelation& tr : td.relations) {
-        if ( tr.otherTableColumn.empty() )
-            continue;
-        grid.clear();
-        executeDatabaseStatement_generic(string("select id,")+tr.otherTableColumn+" from "+tr.otherTableName, &grid, errMsg);
-        if ( grid.empty() )
-            continue; // nothing in the table being referenced
-        grid.erase( grid.begin() ); // skip names row
-        for (vector<string>& rowStrs : grid) {
-            TableRelationRow trr;
-            trr.id = atoi( rowStrs[0].c_str() );
-            trr.value = rowStrs[1];
-            tr.otherTableEntries.push_back( trr );
         }
     }
 }
@@ -305,6 +319,77 @@ void showTableViewSelection(bool* p_open)
             fetchTableNames();
         }
 
+        /*if (ImGui::BeginTable("userTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX))
+        {
+            ImGui::TableSetupColumn( "Show", ImGuiTableColumnFlags_DefaultSort );
+            ImGui::TableSetupColumn( "Script", ImGuiTableColumnFlags_DefaultSort );
+            ImGui::TableSetupColumn( "", ImGuiTableColumnFlags_DefaultSort );
+
+            ImGui::TableHeadersRow();
+
+            int rowNum = 0;
+            for (string name : tableNames) {
+
+                ImGui::PushID(rowNum);
+
+                ImGui::TableNextRow(0, 26);
+
+                {
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::PushItemWidth(50);
+
+                    bool checked = false;
+                    auto it = find( openTableNames.begin(), openTableNames.end(), name);
+                    if ( it != openTableNames.end() )
+                        checked = true;
+                    bool wasChecked = checked;
+                    ImGui::Checkbox( "##tblshow" , &checked);
+                    if ( ! wasChecked && checked ) {
+                        openTableNames.push_back( name );
+                        tableSelectionChanged = true;
+                    }
+                    else if ( wasChecked && ! checked ) {
+                        openTableNames.erase( it );
+                        tableSelectionChanged = true;
+                    }
+                }
+
+                {
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::PushItemWidth(50);
+
+                    bool checked = false;
+                    auto it = find( autogenScriptTableNames.begin(), autogenScriptTableNames.end(), name);
+                    if ( it != autogenScriptTableNames.end() )
+                        checked = true;
+                    bool wasChecked = checked;
+                    ImGui::Checkbox( "##tblscript" , &checked);
+                    if ( ! wasChecked && checked ) {
+                        autogenScriptTableNames.push_back( name );
+                        tableSelectionChanged = true;
+                    }
+                    else if ( wasChecked && ! checked ) {
+                        autogenScriptTableNames.erase( it );
+                        tableSelectionChanged = true;
+                    }
+                }
+
+                {
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::PushItemWidth(0);
+
+                    ImGui::Text(name.c_str());
+                }
+
+                ImGui::PopID();
+
+                rowNum++;
+            }
+
+            ImGui::EndTable();
+
+        }*/
+
         for (string name : tableNames) {
             bool checked = false;
             auto it = find( openTableNames.begin(), openTableNames.end(), name);
@@ -320,6 +405,48 @@ void showTableViewSelection(bool* p_open)
                 openTableNames.erase( it );
                 tableSelectionChanged = true;
             }
+        }
+
+        doLayoutSave(windowPrefix);
+
+        ImGui::End();
+    }
+}
+
+void showAutogenScriptsSelection(bool* p_open)
+{
+    ImGui::SetNextWindowSize(ImVec2(320, 480), ImGuiCond_FirstUseEver);
+
+    string windowPrefix = AUTOGENSCRIPT_WINDOW_TITLE;
+
+    doLayoutLoad(windowPrefix);
+
+    ImGui::Begin(windowPrefix.c_str(), p_open);
+    {
+        if ( ImGui::Button("Refresh") ) {
+            fetchTableNames();
+        }
+
+        for (string name : tableNames) {
+            bool checked = false;
+            auto it = find( autogenScriptTableNames.begin(), autogenScriptTableNames.end(), name);
+            if ( it != autogenScriptTableNames.end() )
+                checked = true;
+            bool wasChecked = checked;
+            ImGui::Checkbox( name.c_str() , &checked);
+            if ( ! wasChecked && checked ) {
+                autogenScriptTableNames.push_back( name );
+                autogenScriptSelectionChanged = true;
+            }
+            else if ( wasChecked && ! checked ) {
+                autogenScriptTableNames.erase( it );
+                autogenScriptSelectionChanged = true;
+            }
+        }
+
+        if ( autogenScriptSelectionChanged ) {
+            script_setDBString( DBSTRING_AUTOGEN_SCRIPT_SELECTION, joinStringVec(autogenScriptTableNames,",") );
+            autogenScriptSelectionChanged = false;
         }
 
         doLayoutSave(windowPrefix);
@@ -430,6 +557,12 @@ void HelpMarker2(const char* desc)
 string pressedTableButtonTable;
 string pressedTableButtonFunc;
 
+void addTableToRefresh(string tableName) {
+    string lowerCaseTableName = string(tableName);
+    transform(lowerCaseTableName.begin(), lowerCaseTableName.end(), lowerCaseTableName.begin(), ::tolower);
+    tablesToRefresh.push_back( lowerCaseTableName );
+}
+
 int showTableViews()
 {
     int pressedButtonId = 0;
@@ -454,11 +587,15 @@ int showTableViews()
         for ( string name : tablesToOpen ) {
             openTableView( name );
         }
+
+        tableSelectionChanged = false;
     }
 
 
     for ( TableData &td : tableDatas ) {
-        auto thisTableIt = find( tablesToRefresh.begin(), tablesToRefresh.end(), td.name );
+        string lowerCaseTableName = string(td.name);
+        transform(lowerCaseTableName.begin(), lowerCaseTableName.end(), lowerCaseTableName.begin(), ::tolower);
+        auto thisTableIt = find( tablesToRefresh.begin(), tablesToRefresh.end(), lowerCaseTableName );
         if ( thisTableIt != tablesToRefresh.end() ) {
             tablesToRefresh.erase( thisTableIt );
             fetchTableData( td );            
@@ -476,6 +613,9 @@ int showTableViews()
         windowPrefix += td.name;
 
         doLayoutLoad(windowPrefix);
+
+        vector<string> tableButtonFuncs;
+        splitStringVec( tableButtonFuncs, tableButtonFunctionEntries, ',' );
 
         bool p_open = true;
         ImGui::Begin(windowPrefix.c_str(), &p_open);
@@ -534,12 +674,12 @@ int showTableViews()
                     string headerTitle = firstRow[colNum];
                     TableRelation& tr = td.relations[colNum];
                     TableBool& tBool = td.bools[colNum];
-                    TableButton& tButton = td.buttons[colNum];
+                    //TableButton& tButton = td.buttons[colNum];
                     if ( ! tBool.shortName.empty() ) {
                         headerTitle = tBool.shortName;
                     }
-                    else if ( ! tButton.shortName.empty() ) {
-                        headerTitle = tButton.shortName;
+                    else if ( colNum < (int)td.buttons.size() && ! td.buttons[colNum].shortName.empty() ) {
+                        headerTitle = td.buttons[colNum].shortName;
                     }
                     else if ( ! tr.otherTableName.empty() ) {
                         headerTitle = tr.otherTableName + " (rel)";
@@ -569,7 +709,7 @@ int showTableViews()
                             ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 0xFF3030b0, colNum);
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 3));
                         ImGui::PushID(colNum);
-                        ImGui::InputText( "filter", c, sizeof(c) );
+                        ImGui::InputText( "##filter", c, sizeof(c) );
                         ImGui::PopID();
                         ImGui::PopStyleVar();
                         filterVal = c;
@@ -607,7 +747,10 @@ int showTableViews()
                             if ( filterVal.empty() )
                                 continue;
                             try {
-                                string &colVal = cols[colNum].text;
+                                string colVal = cols[colNum].text;
+                                TableRelation& tr = td.relations[colNum];
+                                if ( ! tr.otherTableName.empty() )
+                                    colVal = tr.getSelectedDisplayValue( atoi(colVal.c_str()) );
                                 std::regex regexPattern( filterVal );
                                 std::smatch matches;
                                 if ( ! std::regex_search(colVal, matches, regexPattern) ) {
@@ -633,7 +776,7 @@ int showTableViews()
                             string &colVal = cols[colNum].text;
                             string colName = td.colNames[colNum];
                             TableBool& tBool = td.bools[colNum];
-                            TableButton& tButton = td.buttons[colNum];
+                            //TableButton& tButton = td.buttons[colNum];
                             TableRelation& tr = td.relations[colNum];
                             ImGui::TableSetColumnIndex(colNum);
                             if ( ! tBool.shortName.empty() ) {
@@ -656,21 +799,45 @@ int showTableViews()
                                 if ( pushedStyleColor )
                                     ImGui::PopStyleColor(3);
                             }
-                            else if ( ! tButton.shortName.empty() ) {
+                            else if ( colNum < (int)td.buttons.size() && ! td.buttons[colNum].shortName.empty() ) {
 
-                                ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(25, 105, 0, 220));
-                                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(40, 163, 0, 220));
+                                ImGui::PushID(rowNum);
+                                ImGui::PushID(colNum);
 
-                                char buf[64];
-                                sprintf( buf, "%s##cbtn", tButton.shortName.c_str() );
-                                if ( ImGui::Button(buf) ) {
-                                    //g_log.log(LL_DEBUG, "%s %s %d %d %s", tButton.shortName.c_str(), td.name.c_str(), rowNum, colNum, td.grid[rowNum][td.primaryKeyColumnIndex].text.c_str());
-                                    pressedButtonId = atoi( td.grid[rowNum][td.primaryKeyColumnIndex].text.c_str() );
-                                    pressedTableButtonTable = td.name;
-                                    pressedTableButtonFunc = tButton.shortName.c_str();
+                                int thisRowPKID = atoi( td.grid[rowNum][td.primaryKeyColumnIndex].text.c_str() );
+                                string buttonDisplayVal = (colVal == "NULL") ? "" : colVal;
+
+                                if (ImGui::BeginCombo("##btnFuncs", NULL, ImGuiComboFlags_NoPreview))
+                                {
+                                    for (int n = 0; n < (int)tableButtonFuncs.size(); n++) {
+                                        if (ImGui::Selectable(tableButtonFuncs[n].c_str(), false)) {
+                                            dbUpdateWhere(td.name, colName, "'"+tableButtonFuncs[n]+"'", "id", std::to_string(thisRowPKID) );
+                                            addTableToRefresh(td.name);
+                                        }
+                                    }
+                                    ImGui::EndCombo();
                                 }
 
-                                ImGui::PopStyleColor(2);
+                                if ( buttonDisplayVal != "" ) {
+                                    ImGui::SameLine();
+
+                                    ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(25, 105, 0, 220));
+                                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(40, 163, 0, 220));
+
+                                    char buf[64];
+                                    sprintf( buf, "%s##cbtn", buttonDisplayVal.c_str() );
+                                    if ( ImGui::Button(buf) ) {
+                                        //g_log.log(LL_DEBUG, "%s %s %d %d %s", buttonDisplayVal.c_str(), td.name.c_str(), rowNum, colNum, td.grid[rowNum][td.primaryKeyColumnIndex].text.c_str());
+                                        pressedButtonId = thisRowPKID;
+                                        pressedTableButtonTable = td.name;
+                                        pressedTableButtonFunc = buttonDisplayVal.c_str();
+                                    }
+
+                                    ImGui::PopStyleColor(2);
+                                }
+
+                                ImGui::PopID();
+                                ImGui::PopID();
                             }
                             else if ( ! tr.otherTableName.empty() ) {
                                 ImGui::PushID(colNum);
@@ -830,7 +997,7 @@ int showTableViews()
                             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
                             if (ImGui::Button("Delete row")) {
                                 deleteTableRow( td.name, pkColumnName, pkidToDelete );
-                                tablesToRefresh.push_back( td.name );
+                                addTableToRefresh( td.name );
                                 ImGui::CloseCurrentPopup();
                             }
                             ImGui::PopStyleColor(2);
@@ -847,7 +1014,7 @@ int showTableViews()
 
         if ( ImGui::Button("New row") ) {
             addNewTableRow( td.name );
-            tablesToRefresh.push_back( td.name );
+            addTableToRefresh( td.name );
         }
 
         doLayoutSave(windowPrefix);
@@ -860,7 +1027,7 @@ int showTableViews()
 }
 
 void script_refreshTableView(string which) {
-    tablesToRefresh.push_back( which );
+    addTableToRefresh( which );
 }
 
 

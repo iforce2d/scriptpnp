@@ -949,6 +949,7 @@ void generateScriptDocs()
     scopes.push_back("rect");
     scopes.push_back("serialReply");
     scopes.push_back("qrcode");
+    scopes.push_back("affine");
 
     vector<string> ignoredDecls;
 
