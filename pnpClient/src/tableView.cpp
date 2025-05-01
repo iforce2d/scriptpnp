@@ -64,6 +64,8 @@ void fetchTableData_basic(TableData& td) {
     td.primaryKeyColumnIndex = -1;
     td.colNames.clear();
     td.relations.clear();
+    td.bools.clear();
+    td.buttons.clear();
     td.dirty = false;
 
     // find index of the column called 'pk'
@@ -557,6 +559,8 @@ void HelpMarker2(const char* desc)
 string pressedTableButtonTable;
 string pressedTableButtonFunc;
 
+vector<string> highlightedButtonKeys; // table name, function and id, eg. "feeder_gotoQR_23"
+
 void addTableToRefresh(string tableName) {
     string lowerCaseTableName = string(tableName);
     transform(lowerCaseTableName.begin(), lowerCaseTableName.end(), lowerCaseTableName.begin(), ::tolower);
@@ -824,13 +828,26 @@ int showTableViews()
                                     ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(25, 105, 0, 220));
                                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(40, 163, 0, 220));
 
+                                    bool pushedHighlight = false;
+                                    if ( stringVecContains( highlightedButtonKeys, td.name+"_"+buttonDisplayVal+"_"+to_string(thisRowPKID) ) ) {
+                                        ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 163, 0, 220));
+                                        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 3.0f);
+                                        pushedHighlight = true;
+                                    }
+
                                     char buf[64];
                                     sprintf( buf, "%s##cbtn", buttonDisplayVal.c_str() );
+
                                     if ( ImGui::Button(buf) ) {
                                         //g_log.log(LL_DEBUG, "%s %s %d %d %s", buttonDisplayVal.c_str(), td.name.c_str(), rowNum, colNum, td.grid[rowNum][td.primaryKeyColumnIndex].text.c_str());
                                         pressedButtonId = thisRowPKID;
                                         pressedTableButtonTable = td.name;
                                         pressedTableButtonFunc = buttonDisplayVal.c_str();
+                                    }
+
+                                    if ( pushedHighlight ) {
+                                        ImGui::PopStyleVar(1);
+                                        ImGui::PopStyleColor(1);
                                     }
 
                                     ImGui::PopStyleColor(2);
@@ -1030,7 +1047,22 @@ void script_refreshTableView(string which) {
     addTableToRefresh( which );
 }
 
+void script_addHighlightedButtonKey(string key) {
+    if ( key.empty() )
+        return;
+    if ( ! stringVecContains( highlightedButtonKeys, key ) )
+        highlightedButtonKeys.push_back( key );
+}
 
+void script_clearHighlightedButtonKey(string key) {
+    auto it = find( highlightedButtonKeys.begin(), highlightedButtonKeys.end(), key );
+    if ( it != highlightedButtonKeys.end() )
+        highlightedButtonKeys.erase( it );
+}
+
+void script_clearAllHighlightedButtonKeys() {
+    highlightedButtonKeys.clear();
+}
 
 
 

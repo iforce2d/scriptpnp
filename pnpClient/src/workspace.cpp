@@ -580,7 +580,7 @@ void showComboboxEntries(bool* p_open) {
             }
 
             snprintf( buf, sizeof(buf), "%s", usbCameraFunctionComboboxEntries.c_str());
-            ImGui::PushItemWidth(300);
+            ImGui::PushItemWidth(-45);
             ImGui::SameLine();
             ImGui::InputText( "##camfunc", buf, sizeof(buf) );
             usbCameraFunctionComboboxEntries = buf;
@@ -611,7 +611,7 @@ void showComboboxEntries(bool* p_open) {
             }
 
             snprintf( buf, sizeof(buf), "%s", tableButtonFunctionEntries.c_str());
-            ImGui::PushItemWidth(300);
+            ImGui::PushItemWidth(-45);
             ImGui::SameLine();
             ImGui::InputText( "##tablebuttonfunc", buf, sizeof(buf) );
             tableButtonFunctionEntries = buf;

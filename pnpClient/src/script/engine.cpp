@@ -588,6 +588,14 @@ bool setupScriptEngine()
     r = engine->RegisterGlobalFunction("void refreshTableView(string tablename)", asFUNCTION(script_refreshTableView), asCALL_CDECL);
     assert( r >= 0 );
 
+    r = engine->RegisterGlobalFunction("void setHighlightedButton(string tablename)", asFUNCTION(script_addHighlightedButtonKey), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("void clearHighlightedButton(string tablename)", asFUNCTION(script_clearHighlightedButtonKey), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("void clearAllHighlightedButtons()", asFUNCTION(script_clearAllHighlightedButtonKeys), asCALL_CDECL);
+    assert( r >= 0 );
+
+
     r = engine->RegisterGlobalFunction("int getProbeResult()", asFUNCTION(script_getProbeResult), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("float getProbedHeight()", asFUNCTION(script_getProbedHeight), asCALL_CDECL);

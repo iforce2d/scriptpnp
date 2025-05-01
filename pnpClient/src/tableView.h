@@ -91,5 +91,8 @@ void showAutogenScriptsSelection(bool *p_open);
 int showTableViews();
 
 void script_refreshTableView(std::string which);
+void script_addHighlightedButtonKey(std::string key);
+void script_clearHighlightedButtonKey(std::string key);
+void script_clearAllHighlightedButtonKeys();
 
 #endif
