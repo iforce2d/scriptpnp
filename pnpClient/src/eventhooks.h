@@ -8,6 +8,7 @@
 #define MAX_CUSTOM_BUTTON_LABEL_LEN     128
 #define MAX_ENTRY_FUNCTION_LEN          128
 #define MAX_TWEAK_LABEL_LEN             128
+#define MAX_CUSTOM_BUTTON_GROUP_LEN     128
 
 struct functionKeyHookInfo_t {
     int id;
@@ -28,12 +29,16 @@ struct customButtonHookInfo_t {
     char label[MAX_CUSTOM_BUTTON_LABEL_LEN];
     char entryFunction[MAX_ENTRY_FUNCTION_LEN];
     bool preview;
+    char tabGroup[MAX_CUSTOM_BUTTON_GROUP_LEN];
+    int displayOrder;
     customButtonHookInfo_t() {
         id = 0;
         dirty = true;
         label[0] = 0;
         entryFunction[0] = 0;
         preview = true;
+        tabGroup[0] = 0;
+        displayOrder = 0;
     }
 };
 
@@ -44,6 +49,8 @@ struct tweakInfo_t {
     float floatval;
     float minval;
     float maxval;
+    char tabGroup[MAX_CUSTOM_BUTTON_GROUP_LEN];
+    int displayOrder;
     tweakInfo_t() {
         id = 0;
         dirty = true;
@@ -51,6 +58,8 @@ struct tweakInfo_t {
         floatval = 0;
         minval = 0;
         maxval = 10;
+        tabGroup[0] = 0;
+        displayOrder = 0;
     }
 };
 

@@ -2420,8 +2420,8 @@ int main(int, char**)
         if ( show_table_views )
             showTableViewSelection(&show_table_views);
 
-        /*if ( show_autogen_scripts )
-            showAutogenScriptsSelection(&show_autogen_scripts);*/
+        if ( show_autogen_scripts )
+            showAutogenScriptsSelection(&show_autogen_scripts);
 
         if ( show_combobox_entries )
             showComboboxEntries( &show_combobox_entries );

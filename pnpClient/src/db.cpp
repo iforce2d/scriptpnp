@@ -57,10 +57,10 @@ bool openDatabase(std::string filename)
     string createTable_file = "CREATE TABLE IF NOT EXISTS internal_file ( type TEXT NOT NULL, path TEXT NOT NULL, content BLOB, UNIQUE(type,path) )";
     executeDatabaseStatement(createTable_file, NULL, errMsg);
 
-    string createTable_eventHook = "CREATE TABLE IF NOT EXISTS internal_eventhook ( id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, label TEXT NOT NULL, entryfunction TEXT NOT NULL, preview int, UNIQUE(type,label) )";
+    string createTable_eventHook = "CREATE TABLE IF NOT EXISTS internal_eventhook ( id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, label TEXT NOT NULL, entryfunction TEXT NOT NULL, preview int, tab_group TEXT DEFAULT NULL, display_order TEXT DEFAULT 0, UNIQUE(type,label) )";
     executeDatabaseStatement(createTable_eventHook, NULL, errMsg);
 
-    string createTable_tweak = "CREATE TABLE IF NOT EXISTS internal_tweak ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, minval REAL NOT NULL, maxval REAL NOT NULL, floatval REAL NOT NULL, UNIQUE(name) )";
+    string createTable_tweak = "CREATE TABLE IF NOT EXISTS internal_tweak ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, minval REAL NOT NULL, maxval REAL NOT NULL, floatval REAL NOT NULL, tab_group TEXT DEFAULT NULL, display_order TEXT DEFAULT 0, UNIQUE(name) )";
     executeDatabaseStatement(createTable_tweak, NULL, errMsg);
 
     string createTable_windowpos = "CREATE TABLE IF NOT EXISTS internal_windowpos ( id INTEGER PRIMARY KEY AUTOINCREMENT, layouttitle TEXT NOT NULL, windowtitle TEXT NOT NULL, x INT NOT NULL, y INT NOT NULL, w INT NOT NULL, h INT NOT NULL, UNIQUE(layouttitle,windowtitle) )";

@@ -1,4 +1,6 @@
 
+#include <map>
+
 #include "imgui.h"
 #include "tweakspanel.h"
 #include "eventhooks.h"
@@ -33,21 +35,40 @@ void showTweaksView(bool* p_open, float dt) {
     {
         vector<tweakInfo_t> &infos = getTweakInfos();
 
-        int count = 0;
-        for ( tweakInfo_t & info : infos ) {
-
-            if ( ! info.name[0] )
+        map<string, vector<int> > groupToContentMap;
+        for (int i = 0; i < (int)infos.size(); i++) {
+            tweakInfo_t& info = infos[i];
+            if ( info.name[0] == 0 )
                 continue;
+            string groupKey = (info.tabGroup[0] == 0) ? "Default" : info.tabGroup;
+            groupToContentMap[ groupKey ].push_back( i );
+        }
 
-            char buf[148];
-            sprintf(buf, "%s##id%d", info.name, count++);
+        int count = 0;
+        auto it = groupToContentMap.begin();
+        while ( it != groupToContentMap.end() ) {
 
-            ImGui::SliderFloat(buf, &info.floatval, info.minval, info.maxval);
+            if (ImGui::BeginTabBar("buttontabs", ImGuiTabBarFlags_None))
+            {
+                if (ImGui::BeginTabItem(it->first.c_str()))
+                {
+                    for ( int i : it->second ) {
+                        tweakInfo_t& info = infos[i];
+                        char buf[148];
+                        sprintf(buf, "%s##id%d", info.name, count++);
 
-            if ( ImGui::IsItemEdited() ) {
-                info.dirty = true;
-                tweakValuesNeedSaveTimer = TVST_TIMEOUT;
+                        ImGui::SliderFloat(buf, &info.floatval, info.minval, info.maxval);
+
+                        if ( ImGui::IsItemEdited() ) {
+                            info.dirty = true;
+                            tweakValuesNeedSaveTimer = TVST_TIMEOUT;
+                        }
+                    }
+                    ImGui::EndTabItem();
+                }
+                ImGui::EndTabBar();
             }
+            it++;
         }
     }
 
