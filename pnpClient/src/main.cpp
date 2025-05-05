@@ -1039,6 +1039,7 @@ int main(int, char**)
     style.ChildRounding = 4;
 
     style.Colors[ImGuiCol_TitleBg] = ImColor(28, 28, 28);
+    style.Colors[ImGuiCol_TabSelected] = ImVec4(0.0f, 0.6f, 1.0f, 1.0f);
 
     string dbFile = "mypnp.db";
     if ( ! openDatabase(dbFile) ) {

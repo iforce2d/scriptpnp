@@ -40,6 +40,8 @@ void showTweaksView(bool* p_open, float dt) {
             tweakInfo_t& info = infos[i];
             if ( info.name[0] == 0 )
                 continue;
+            if ( info.tabGroup[0] == '-' && info.tabGroup[1] == 0 )
+                continue;
             string groupKey = (info.tabGroup[0] == 0) ? "Default" : info.tabGroup;
             groupToContentMap[ groupKey ].push_back( i );
         }

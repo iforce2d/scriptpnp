@@ -23,6 +23,8 @@ void showCustomView(bool* p_open) {
             customButtonHookInfo_t& info = infos[i];
             if ( info.label[0] == 0 )
                 continue;
+            if ( info.tabGroup[0] == '-' && info.tabGroup[1] == 0 )
+                continue;
             string groupKey = (info.tabGroup[0] == 0) ? "Default" : info.tabGroup;
             groupToContentMap[ groupKey ].push_back( i );
         }
