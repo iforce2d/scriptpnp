@@ -53,6 +53,7 @@ bool show_serial_view = false;
 bool show_table_views = false;
 bool show_autogen_scripts = false;
 bool show_combobox_entries = false;
+bool show_duplicate_table_view = false;
 
 string workspaceInfoSaveRequestedTitle = "";
 string workspaceInfoLoadRequestedTitle = "";
@@ -227,6 +228,7 @@ static int loadWorkspace_callback(void *NotUsed, int argc, char **argv, char **a
 #define WW_DBTABLES         "dbtables"
 #define WW_DBTABLES_AUTOGEN_SCRIPT      "dbtablesAutogenScript"
 #define WW_COMBOBOX_ENTRIES             "comboboxentries"
+#define WW_DUPLICATE_TABLE              "duplicatetable"
 
 void saveWorkspaceToDB_windowsOpen(string layoutTitle)
 {
@@ -247,6 +249,7 @@ void saveWorkspaceToDB_windowsOpen(string layoutTitle)
     if ( show_table_views ) internalsVec.push_back( WW_DBTABLES );
     if ( show_autogen_scripts ) internalsVec.push_back( WW_DBTABLES_AUTOGEN_SCRIPT );
     if ( show_combobox_entries ) internalsVec.push_back( WW_COMBOBOX_ENTRIES );
+    if ( show_duplicate_table_view ) internalsVec.push_back( WW_DUPLICATE_TABLE );
 
     string internalsStr = joinStringVec(internalsVec, ",");
     string tablesStr = joinStringVec(getOpenTableNames(), ",");
@@ -319,6 +322,7 @@ bool loadWorkspaceFromDB_windowsOpen(string layoutTitle)
             show_table_views = stringVecContains( currentLayout.internalWindows, WW_DBTABLES );
             show_autogen_scripts = stringVecContains( currentLayout.internalWindows, WW_DBTABLES_AUTOGEN_SCRIPT );
             show_combobox_entries = stringVecContains( currentLayout.internalWindows, WW_COMBOBOX_ENTRIES );
+            show_duplicate_table_view = stringVecContains( currentLayout.internalWindows, WW_DUPLICATE_TABLE );
 
             ensureNScriptEditorWindowsOpen( stringVecContains( currentLayout.internalWindows, WW_SCRIPTEDITOR ) ? 1 : 0 );
             ensureNCommandEditorWindowsOpen( stringVecContains( currentLayout.internalWindows, WW_COMMANDEDITOR ) ? 1 : 0 );

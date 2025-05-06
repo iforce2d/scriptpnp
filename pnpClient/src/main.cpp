@@ -77,6 +77,7 @@
 #include "serial_view.h"
 
 #include "tableView.h"
+#include "duplicatetableview.h"
 
 #include "config.h"
 
@@ -1824,6 +1825,7 @@ int main(int, char**)
                 {
                     ImGui::MenuItem("View", NULL, &show_table_views);
                     ImGui::MenuItem("Script auto-gen", NULL, &show_autogen_scripts);
+                    ImGui::MenuItem("Duplicate table", NULL, &show_duplicate_table_view);
 
                     ImGui::EndMenu();
                 }
@@ -2426,6 +2428,9 @@ int main(int, char**)
 
         if ( show_combobox_entries )
             showComboboxEntries( &show_combobox_entries );
+
+        if ( show_duplicate_table_view )
+            showDuplicateTableView( &show_duplicate_table_view );
 
         int pressedTableButtonRowId = showTableViews();
 

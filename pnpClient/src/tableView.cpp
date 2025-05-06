@@ -827,7 +827,8 @@ int showTableViews()
                                     for (int n = 0; n < (int)tableButtonFuncs.size(); n++) {
                                         if (ImGui::Selectable(tableButtonFuncs[n].c_str(), false)) {
                                             dbUpdateWhere(td.name, colName, "'"+tableButtonFuncs[n]+"'", "id", std::to_string(thisRowPKID) );
-                                            addTableToRefresh(td.name);
+                                            colVal = tableButtonFuncs[n];
+                                            //addTableToRefresh(td.name);
                                         }
                                     }
                                     ImGui::EndCombo();

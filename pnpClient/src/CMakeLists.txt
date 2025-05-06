@@ -95,6 +95,7 @@ add_executable(pnpClient
     script_probing.h script_probing.cpp
     feedback.h feedback.cpp
     version.h
+    duplicatetableview.h duplicatetableview.cpp
 )
 
 add_compile_definitions(CLIENT)

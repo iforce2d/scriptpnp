@@ -31,6 +31,7 @@ extern bool show_serial_view;
 extern bool show_table_views;
 extern bool show_autogen_scripts;
 extern bool show_combobox_entries;
+extern bool show_duplicate_table_view;
 
 extern std::string usbCameraFunctionComboboxEntries;
 extern std::string tableButtonFunctionEntries;

@@ -365,10 +365,13 @@ bool appendGeneratedClasses(string moduleName) {
 
             classDef += "}\n"; // end of class
 
+            // ---------------------------------------------
+            // global functions follow
+
             // print
             classDef += "void print("+autogenPrefix+tableName+" obj) { print( obj.str() ); }\n";
 
-            // get by id
+            // get single object by id
             classDef += autogenPrefix+tableName+" getDB"+tableName+"(int id) {\n";
             classDef += "    "+autogenPrefix+tableName+" instance;\n";
             classDef += "    dbResult res = dbQuery('select * from "+tableName+" where id = '+id);\n";
@@ -393,6 +396,37 @@ bool appendGeneratedClasses(string moduleName) {
             }
             classDef += "    instance.valid = true;\n";
             classDef += "    return instance;\n";
+            classDef += "}\n";
+
+            // get array of objects by 'where' clause
+            classDef += autogenPrefix+tableName+"[] getDB"+tableName+"s(string whereClause = '') {\n";
+            classDef += "    "+autogenPrefix+tableName+"[] arr;\n";
+            classDef += "    dbResult res = dbQuery('select * from "+tableName+" '+whereClause);\n";
+            classDef += "    if (res.numRows < 1) \n";
+            classDef += "        return arr;\n";
+            classDef += "    for (uint i = 0; i < res.numRows; i++) { \n";
+            classDef += "        dbRow row = res.row(i);\n";
+            classDef += "        "+autogenPrefix+tableName+" instance;\n";
+            for (int i = 0; i < (int)td.colNames.size(); i++) {
+                string colName = td.colNames[i];
+                int colType = td.colTypes[i];
+                if ( colType == CDT_INTEGER )
+                    classDef += "        instance."+colName+" = parseInt( row.col('"+colName+"') );\n";
+                else if ( colType == CDT_REAL )
+                    classDef += "        instance."+colName+" = parseFloat( row.col('"+colName+"') );\n";
+                else if ( colType == CDT_TEXT )
+                    classDef += "        instance."+colName+" = row.col('"+colName+"');\n";
+            }
+            for (int i = 0; i < (int)td.relations.size(); i++) {
+                TableRelation& tr = td.relations[i];
+                if ( ! tr.otherTableName.empty() ) {
+                    classDef += "        instance."+tr.otherTableName+" = getDB"+upperCaseInitial(tr.otherTableName)+"(instance."+tr.fullColumnName+");\n";
+                }
+            }
+            classDef += "        instance.valid = true;\n";
+            classDef += "        arr.insertLast( instance );\n";
+            classDef += "    }\n";
+            classDef += "    return arr;\n";
             classDef += "}\n";
 
 
