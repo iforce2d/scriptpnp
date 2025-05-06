@@ -11,6 +11,8 @@
 
 using namespace std;
 
+void HelpMarker(const char* desc);
+
 struct workspaceLayoutInfo_t {
     //int id;
     string title;
@@ -561,8 +563,10 @@ void showComboboxEntries(bool* p_open) {
 
     doLayoutLoad(COMBOBOX_ENTRIES_WINDOW_TITLE);
 
-    // comma separated alphanumeric string, allow whitespace on either side
-    string regexStr = "^( *[a-zA-Z]\\w* *)(, *[a-zA-Z]\\w* *)*$";
+    string oneEntry = " *[a-zA-Z]\\w*(-\\w+)? *";
+
+    // comma separated alphanumeric string (starting with a letter), allow whitespace on either side
+    string regexStr = "^("+oneEntry+")(,"+oneEntry+")*$";
 
     ImGui::Begin(COMBOBOX_ENTRIES_WINDOW_TITLE, p_open);
     {
@@ -572,11 +576,16 @@ void showComboboxEntries(bool* p_open) {
         {
             ImGui::Text( "USB camera functions" );
 
+            ImGui::SameLine();
+            HelpMarker("Script functions to show in USB camera view combobox, as a comma separated list.");
+
             bool regexFailed = false;
             std::smatch matches;
-            if ( ! std::regex_search(usbCameraFunctionComboboxEntries, matches, regexPattern) ) {
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-                regexFailed = true;
+            if ( ! usbCameraFunctionComboboxEntries.empty() ) {
+                if ( ! std::regex_search(usbCameraFunctionComboboxEntries, matches, regexPattern) ) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                    regexFailed = true;
+                }
             }
 
             snprintf( buf, sizeof(buf), "%s", usbCameraFunctionComboboxEntries.c_str());
@@ -603,11 +612,16 @@ void showComboboxEntries(bool* p_open) {
         {
             ImGui::Text( "DB table button functions" );
 
+            ImGui::SameLine();
+            HelpMarker("Script functions to show in comboboxes for DB table buttons, as a comma separated list. To restrict display to a specific table, add that table as a hyphenated suffix, eg. \"gotoQR-feeder\" will only be shown in the 'feeder' table.");
+
             bool regexFailed = false;
             std::smatch matches;
-            if ( ! std::regex_search(tableButtonFunctionEntries, matches, regexPattern) ) {
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-                regexFailed = true;
+            if ( ! tableButtonFunctionEntries.empty() ) {
+                if ( ! std::regex_search(tableButtonFunctionEntries, matches, regexPattern) ) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                    regexFailed = true;
+                }
             }
 
             snprintf( buf, sizeof(buf), "%s", tableButtonFunctionEntries.c_str());

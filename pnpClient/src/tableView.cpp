@@ -619,7 +619,18 @@ int showTableViews()
         doLayoutLoad(windowPrefix);
 
         vector<string> tableButtonFuncs;
-        splitStringVec( tableButtonFuncs, tableButtonFunctionEntries, ',' );
+        vector<string> candidateTableButtonFuncs;
+        splitStringVec( candidateTableButtonFuncs, tableButtonFunctionEntries, ',' );
+        for ( string s : candidateTableButtonFuncs ) {
+            vector<string> parts;
+            splitStringVec(parts, s, '-');
+            if ( parts.size() == 2 ) {
+                if ( parts[1] == td.name )
+                    tableButtonFuncs.push_back( parts[0] );
+            }
+            else
+                tableButtonFuncs.push_back( s );
+        }
 
         bool p_open = true;
         ImGui::Begin(windowPrefix.c_str(), &p_open);
