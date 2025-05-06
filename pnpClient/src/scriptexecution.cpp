@@ -229,11 +229,11 @@ bool runScript(string moduleName, string funcName, bool previewOnly, void *codeE
 
 bool setScriptFunc(compiledScript_t &compiled, string funcName, scriptParams_t *params, void *codeEditorWindow) {
 
-    string funcSig = "void main()";
+    string funcSig = "void  main()";  // keep the two spaces after 'void', so it can be replaced with 'float' below
 
     if ( ! funcName.empty() ) {
         if ( params ) {
-            funcSig = "void " + funcName + "(";
+            funcSig = "void  " + funcName + "("; // keep the two spaces after 'void'
 
             vector<string> paramSigs;
             for ( scriptParam_t& p : params->paramList ) {
@@ -250,7 +250,7 @@ bool setScriptFunc(compiledScript_t &compiled, string funcName, scriptParams_t *
             funcSig += ")";
         }
         else {
-            funcSig = "void " +funcName +"()";
+            funcSig = "void  " +funcName +"()"; // keep the two spaces after 'void'
         }
     }
 
@@ -260,9 +260,26 @@ bool setScriptFunc(compiledScript_t &compiled, string funcName, scriptParams_t *
             w = scriptEditorWindows[0];
     }
 
+    vector<string> otherSigs;
+    otherSigs.push_back( "bool  " );
+    otherSigs.push_back( "int   " );
+    otherSigs.push_back( "float " );
+
     asIScriptFunction *func = compiled.mod->GetFunctionByDecl( funcSig.c_str() );
-    if( ! func )
-    {
+    if ( ! func ) {
+        for (int i = 0; i < (int)otherSigs.size(); i++) {
+            string otherSig = otherSigs[i];
+            for (int c = 0; c < 5; c++)
+                funcSig[c] = otherSig[c];
+            if ( (func = compiled.mod->GetFunctionByDecl( funcSig.c_str() )) )
+                break;
+        }
+    }
+
+    if ( ! func ) {
+
+        funcSig = funcSig.substr(6);
+
         g_log.log(LL_ERROR, "GetFunctionByDecl failed looking for '%s'", funcSig.c_str());
         if ( w )
             w->log.log(LL_ERROR, NULL, 0, "[%s] Could not find entry point '%s'", logPrefixArray[LL_ERROR], funcSig.c_str());
