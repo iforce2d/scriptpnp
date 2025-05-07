@@ -83,11 +83,12 @@ extern std::string pressedTableButtonFunc;
 void setDesiredOpenTables( std::vector<std::string> which );
 std::vector<std::string> & getOpenTableNames();
 std::vector<std::string> & getAutogenScriptTableNames();
+std::vector<std::string> & getHideTableNames();
 
 void fetchTableNames();
 void fetchTableData_basic(TableData& td);
 void showTableViewSelection(bool *p_open);
-void showAutogenScriptsSelection(bool *p_open);
+void showTableSettings(bool *p_open);
 int showTableViews();
 
 void script_refreshTableView(std::string which);

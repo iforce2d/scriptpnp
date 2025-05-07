@@ -1091,6 +1091,11 @@ int main(int, char**)
         splitStringVec( getAutogenScriptTableNames(), autogenScriptTables, ',' );
     }
 
+    if ( script_haveDBString( DBSTRING_HIDE_TABLE_NAMES ) ) {
+        string hideTableNames = script_getDBString( DBSTRING_HIDE_TABLE_NAMES );
+        splitStringVec( getHideTableNames(), hideTableNames, ',' );
+    }
+
     if ( script_haveDBString( DBSTRING_USB_CAMERA_FUNCTIONS ) ) {
         usbCameraFunctionComboboxEntries = script_getDBString( DBSTRING_USB_CAMERA_FUNCTIONS );
     }
@@ -1823,8 +1828,8 @@ int main(int, char**)
 
                 if (ImGui::BeginMenu("DB"))
                 {
-                    ImGui::MenuItem("View", NULL, &show_table_views);
-                    ImGui::MenuItem("Script auto-gen", NULL, &show_autogen_scripts);
+                    ImGui::MenuItem("View tables", NULL, &show_table_views);
+                    ImGui::MenuItem("Table settings", NULL, &show_table_settings);
                     ImGui::MenuItem("Duplicate table", NULL, &show_duplicate_table_view);
 
                     ImGui::EndMenu();
@@ -2423,8 +2428,8 @@ int main(int, char**)
         if ( show_table_views )
             showTableViewSelection(&show_table_views);
 
-        if ( show_autogen_scripts )
-            showAutogenScriptsSelection(&show_autogen_scripts);
+        if ( show_table_settings )
+            showTableSettings(&show_table_settings);
 
         if ( show_combobox_entries )
             showComboboxEntries( &show_combobox_entries );

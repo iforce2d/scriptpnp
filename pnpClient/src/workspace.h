@@ -29,7 +29,7 @@ extern bool show_tweaks_view;
 extern bool show_server_view;
 extern bool show_serial_view;
 extern bool show_table_views;
-extern bool show_autogen_scripts;
+extern bool show_table_settings;
 extern bool show_combobox_entries;
 extern bool show_duplicate_table_view;
 

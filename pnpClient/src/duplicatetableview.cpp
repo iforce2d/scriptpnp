@@ -126,6 +126,7 @@ void showDuplicateTableView(bool* p_open)
             executeDatabaseStatement_generic("DROP TABLE IF EXISTS '"+tableTo+"'", NULL, errMsg);
             executeDatabaseStatement_generic(createStr, NULL, errMsg);
             executeDatabaseStatement_generic("INSERT INTO '"+tableTo+"' SELECT * from '"+tableFrom+"'", NULL, errMsg);
+            fetchTableNames();
             addTableToRefresh( tableTo );
         }
     }

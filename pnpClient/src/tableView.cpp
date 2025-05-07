@@ -17,15 +17,15 @@
 using namespace std;
 
 #define TABLESLIST_WINDOW_TITLE "DB tables"
-#define AUTOGENSCRIPT_WINDOW_TITLE "Script binding auto-generation"
+#define AUTOGENSCRIPT_WINDOW_TITLE "Table settings"
 
 vector<string> tableNames;
 vector<string> openTableNames;
 vector<string> autogenScriptTableNames;
+vector<string> hideInMainViewTableNames;
 vector<std::string> tablesToRefresh;
 vector<TableData> tableDatas;
 bool tableSelectionChanged = false;
-bool autogenScriptSelectionChanged = false;
 
 void setDesiredOpenTables( vector<string> which ) {
     openTableNames = which;
@@ -38,6 +38,10 @@ vector<string> & getOpenTableNames() {
 
 vector<string> & getAutogenScriptTableNames() {
     return autogenScriptTableNames;
+}
+
+vector<string> & getHideTableNames() {
+    return hideInMainViewTableNames;
 }
 
 void fetchTableNames() {
@@ -393,6 +397,10 @@ void showTableViewSelection(bool* p_open)
         }*/
 
         for (string name : tableNames) {
+
+            if ( stringVecContains(hideInMainViewTableNames, name) )
+                continue;
+
             bool checked = false;
             auto it = find( openTableNames.begin(), openTableNames.end(), name);
             if ( it != openTableNames.end() )
@@ -415,7 +423,7 @@ void showTableViewSelection(bool* p_open)
     }
 }
 
-void showAutogenScriptsSelection(bool* p_open)
+void showTableSettings(bool* p_open)
 {
     ImGui::SetNextWindowSize(ImVec2(320, 480), ImGuiCond_FirstUseEver);
 
@@ -423,32 +431,144 @@ void showAutogenScriptsSelection(bool* p_open)
 
     doLayoutLoad(windowPrefix);
 
+    bool autogenScriptSelectionChanged = false;
+    bool hideTablesSelectionChanged = false;
+    static string tableToDelete;
+    bool doConfirmDeleteTable = false;
+
     ImGui::Begin(windowPrefix.c_str(), p_open);
     {
         if ( ImGui::Button("Refresh") ) {
             fetchTableNames();
         }
 
-        for (string name : tableNames) {
-            bool checked = false;
-            auto it = find( autogenScriptTableNames.begin(), autogenScriptTableNames.end(), name);
-            if ( it != autogenScriptTableNames.end() )
-                checked = true;
-            bool wasChecked = checked;
-            ImGui::Checkbox( name.c_str() , &checked);
-            if ( ! wasChecked && checked ) {
-                autogenScriptTableNames.push_back( name );
-                autogenScriptSelectionChanged = true;
+        if (ImGui::BeginTable("tblsettings", 4, ImGuiTableFlags_Resizable))
+        {
+            ImGui::TableHeadersRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Table");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("Hide in\nmain list");
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("Generate\nscript\nbinding");
+            ImGui::TableSetColumnIndex(3);
+            ImGui::Text("Delete");
+
+            int rownum = 0;
+            for (string name : tableNames) {
+
+                ImGui::TableNextRow();
+                ImGui::PushID(rownum++);
+
+                {
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text(name.c_str());
+                }
+
+                {
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::PushID(1);
+
+                    bool checked = false;
+                    auto it = find( hideInMainViewTableNames.begin(), hideInMainViewTableNames.end(), name);
+                    if ( it != hideInMainViewTableNames.end() )
+                        checked = true;
+                    bool wasChecked = checked;
+                    ImGui::Checkbox( "##cb" , &checked);
+                    if ( ! wasChecked && checked ) {
+                        hideInMainViewTableNames.push_back( name );
+                        hideTablesSelectionChanged = true;
+                    }
+                    else if ( wasChecked && ! checked ) {
+                        hideInMainViewTableNames.erase( it );
+                        hideTablesSelectionChanged = true;
+                    }
+                    ImGui::PopID();
+                }
+
+                {
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::PushID(2);
+
+                    bool checked = false;
+                    auto it = find( autogenScriptTableNames.begin(), autogenScriptTableNames.end(), name);
+                    if ( it != autogenScriptTableNames.end() )
+                        checked = true;
+                    bool wasChecked = checked;
+                    ImGui::Checkbox( "##cb" , &checked);
+                    if ( ! wasChecked && checked ) {
+                        autogenScriptTableNames.push_back( name );
+                        autogenScriptSelectionChanged = true;
+                    }
+                    else if ( wasChecked && ! checked ) {
+                        autogenScriptTableNames.erase( it );
+                        autogenScriptSelectionChanged = true;
+                    }
+                    ImGui::PopID();
+                }
+
+                {
+                    ImGui::TableSetColumnIndex(3);
+                    ImGui::PushID(3);
+
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+                    if ( ImGui::Button("Delete") ) {
+                        tableToDelete = name;
+                        doConfirmDeleteTable = true;
+                    }
+                    ImGui::PopStyleColor(2);
+
+                    ImGui::PopID();
+                }
+
+                ImGui::PopID();
             }
-            else if ( wasChecked && ! checked ) {
-                autogenScriptTableNames.erase( it );
-                autogenScriptSelectionChanged = true;
-            }
+
+            ImGui::EndTable();
         }
 
         if ( autogenScriptSelectionChanged ) {
             script_setDBString( DBSTRING_AUTOGEN_SCRIPT_SELECTION, joinStringVec(autogenScriptTableNames,",") );
             autogenScriptSelectionChanged = false;
+        }
+
+        if ( hideTablesSelectionChanged ) {
+            script_setDBString( DBSTRING_HIDE_TABLE_NAMES, joinStringVec(hideInMainViewTableNames,",") );
+            hideTablesSelectionChanged = false;
+        }
+
+        if ( doConfirmDeleteTable ) {
+            ImGui::OpenPopup("Delete table");
+            doConfirmDeleteTable = false;
+        }
+
+        if (ImGui::BeginPopupModal("Delete table", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text(("Permanently delete table '"+tableToDelete+"' ?").c_str());
+
+            ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.9f, 0.3f, 1.0f));
+            if ( ImGui::Button("Delete", ImVec2(120, 0))) {
+                //g_log.log(LL_DEBUG, "Deleting table '%s'", tableToDelete.c_str());
+                string errMsg;
+                executeDatabaseStatement("DROP TABLE "+tableToDelete, NULL, errMsg);
+                fetchTableNames();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopStyleColor(3);
+
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopStyleColor(3);
+
+            ImGui::EndPopup();
         }
 
         doLayoutSave(windowPrefix);
@@ -610,6 +730,9 @@ int showTableViews()
 
     for ( TableData &td : tableDatas ) {
 
+        if ( stringVecContains(hideInMainViewTableNames, td.name) )
+            continue;
+
         ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
@@ -683,7 +806,7 @@ int showTableViews()
 
             vector<string> &firstRow = td.colNames;
             int numCols = firstRow.size();
-            if (ImGui::BeginTable("userTable", numCols, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX))
+            if (ImGui::BeginTable("userTable", numCols, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_Hideable))
             {
                 for (int colNum = 0; colNum < (int)firstRow.size(); colNum++) {
                     string headerTitle = firstRow[colNum];
@@ -1040,6 +1163,8 @@ int showTableViews()
                 ImGui::EndTable();
             }
         }
+
+        ImGui::Text("%d rows", td.grid.size());
 
         if ( ImGui::Button("New row") ) {
             addNewTableRow( td.name );

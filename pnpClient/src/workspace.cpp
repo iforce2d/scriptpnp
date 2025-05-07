@@ -51,7 +51,7 @@ bool show_tweaks_view = false;
 bool show_server_view = false;
 bool show_serial_view = false;
 bool show_table_views = false;
-bool show_autogen_scripts = false;
+bool show_table_settings = false;
 bool show_combobox_entries = false;
 bool show_duplicate_table_view = false;
 
@@ -247,7 +247,7 @@ void saveWorkspaceToDB_windowsOpen(string layoutTitle)
     if ( show_server_view ) internalsVec.push_back( WW_SERVER );
     if ( show_serial_view ) internalsVec.push_back( WW_SERIAL );
     if ( show_table_views ) internalsVec.push_back( WW_DBTABLES );
-    if ( show_autogen_scripts ) internalsVec.push_back( WW_DBTABLES_AUTOGEN_SCRIPT );
+    if ( show_table_settings ) internalsVec.push_back( WW_DBTABLES_AUTOGEN_SCRIPT );
     if ( show_combobox_entries ) internalsVec.push_back( WW_COMBOBOX_ENTRIES );
     if ( show_duplicate_table_view ) internalsVec.push_back( WW_DUPLICATE_TABLE );
 
@@ -320,7 +320,7 @@ bool loadWorkspaceFromDB_windowsOpen(string layoutTitle)
             show_server_view = stringVecContains( currentLayout.internalWindows, WW_SERVER );
             show_serial_view = stringVecContains( currentLayout.internalWindows, WW_SERIAL );
             show_table_views = stringVecContains( currentLayout.internalWindows, WW_DBTABLES );
-            show_autogen_scripts = stringVecContains( currentLayout.internalWindows, WW_DBTABLES_AUTOGEN_SCRIPT );
+            show_table_settings = stringVecContains( currentLayout.internalWindows, WW_DBTABLES_AUTOGEN_SCRIPT );
             show_combobox_entries = stringVecContains( currentLayout.internalWindows, WW_COMBOBOX_ENTRIES );
             show_duplicate_table_view = stringVecContains( currentLayout.internalWindows, WW_DUPLICATE_TABLE );
 

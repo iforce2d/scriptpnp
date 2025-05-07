@@ -5,6 +5,7 @@
 #include "script/api.h"
 
 #define DBSTRING_AUTOGEN_SCRIPT_SELECTION   "internal_autogenScriptTables"
+#define DBSTRING_HIDE_TABLE_NAMES           "internal_hideInMainViewTableNames"
 #define DBSTRING_USB_CAMERA_FUNCTIONS       "internal_usbCameraFunctions"
 #define DBSTRING_TABLE_BUTTON_FUNCTIONS     "internal_dbTableButtonFunctions"
 
