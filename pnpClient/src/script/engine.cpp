@@ -96,6 +96,13 @@ void vec3_initConstructor(float x, float y, float z, script_vec3 *self)
     new(self) script_vec3(x,y,z);
 }
 
+void affine_defaultConstructor(void *self)
+{
+    new(self) script_affine();
+    script_affine* a = (script_affine*)self;
+    a->setIdentity();
+}
+
 void affine_initConstructor(script_vec3 a0, script_vec3 a1, script_vec3 a2, script_vec3 b0, script_vec3 b1, script_vec3 b2, script_affine *self)
 {
     new(self) script_affine(a0, a1, a2, b0, b1, b2);
@@ -623,6 +630,8 @@ bool setupScriptEngine()
 
 
     r = engine->RegisterObjectType("affine", sizeof(script_affine), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS | asOBJ_APP_CLASS_ALLFLOATS  );
+    assert( r >= 0 );
+    r = engine->RegisterObjectBehaviour("affine", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(affine_defaultConstructor), asCALL_CDECL_OBJLAST);
     assert( r >= 0 );
     r = engine->RegisterObjectBehaviour("affine", asBEHAVE_CONSTRUCT, "void f(vec3 a0, vec3 a1, vec3 a2, vec3 b0, vec3 b1, vec3 b2)", asFUNCTION(affine_initConstructor), asCALL_CDECL_OBJLAST);
     assert( r >= 0 );

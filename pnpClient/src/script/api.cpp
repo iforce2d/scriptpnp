@@ -1283,6 +1283,32 @@ script_affine &script_affine::operator=(const script_affine &other)
     return *this;
 }
 
+void script_affine::setIdentity()
+{
+    memset(matrix, 0, sizeof(matrix));
+    matrix[0][0] = 1;
+    matrix[0][1] = 1;
+    matrix[0][2] = 1;
+    matrix[0][6] = 1;
+
+    matrix[1][1] = -1;
+
+    matrix[2][2] = 1;
+
+    matrix[3][3] = 1;
+    matrix[3][5] = 1;
+
+    matrix[4][4] = 1;
+    matrix[4][6] = 1;
+
+    matrix[5][5] = 1;
+
+    rotation = 0;
+    scaleX = 1;
+    scaleY = 1;
+    valid = true;
+}
+
 void script_affine::gaussEliminate() {
     int N = 6;
     for (int i = 0; i < N; i++) {

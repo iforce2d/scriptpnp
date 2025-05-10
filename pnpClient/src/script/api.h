@@ -214,6 +214,7 @@ public:
     script_affine(const script_vec3 a0, const script_vec3 a1, const script_vec3 a2,
                   const script_vec3 b0, const script_vec3 b1, const script_vec3 b2);
     script_affine& operator=(const script_affine &other);
+    void setIdentity();
     void gaussEliminate();
     script_vec3 transform(const script_vec3& p);
     std::string str();
