@@ -926,6 +926,8 @@ int showTableViews()
                                     pushedStyleColor = true;
                                 }
 
+                                ImGui::PushID(colNum);
+
                                 bool checked = colVal == "1";
                                 bool oldVal = checked;
                                 ImGui::Checkbox("##cb", &checked);
@@ -933,6 +935,8 @@ int showTableViews()
                                 bool dirty = checked != oldVal;
                                 cols[colNum].dirty |= dirty;
                                 td.dirty |= dirty;
+
+                                ImGui::PopID();
 
                                 if ( pushedStyleColor )
                                     ImGui::PopStyleColor(3);
@@ -1164,7 +1168,7 @@ int showTableViews()
             }
         }
 
-        ImGui::Text("%d rows", td.grid.size());
+        ImGui::Text("%d rows", (int)td.grid.size());
 
         if ( ImGui::Button("New row") ) {
             addNewTableRow( td.name );

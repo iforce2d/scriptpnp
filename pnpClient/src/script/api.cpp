@@ -1363,7 +1363,7 @@ void script_affine::gaussEliminate() {
 
 script_vec3 script_affine::transform(const script_vec3 &p) {
     script_vec3 t;
-    t.z = 0;
+    //t.z = 0;
     t.x = matrix[0][6] * p.x + matrix[1][6] * p.y + matrix[2][6];
     t.y = matrix[3][6] * p.x + matrix[4][6] * p.y + matrix[5][6];
     return t;

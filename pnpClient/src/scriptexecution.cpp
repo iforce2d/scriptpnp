@@ -134,16 +134,23 @@ void saveAllDocuments(vector<CodeEditorDocument*> &documents) {
     }
 }
 
-bool isAnyDocumentDirty(bool &allDocsHaveOwnFile) {
+vector<string> dirtyDocuments;
+
+bool isAnyDocumentDirty(bool &allDocsHaveOwnFile) {    
     allDocsHaveOwnFile = true;
+    dirtyDocuments.clear();
     bool anyDirty = false;
     for (CodeEditorDocument* d : commandDocuments) {
         allDocsHaveOwnFile &= d->hasOwnFile;
         anyDirty |= d->dirty;
+        if ( d->dirty )
+            dirtyDocuments.push_back( "(Command list) " + d->filename );
     }
     for (CodeEditorDocument* d : scriptDocuments) {
         allDocsHaveOwnFile &= d->hasOwnFile;
         anyDirty |= d->dirty;
+        if ( d->dirty )
+            dirtyDocuments.push_back( "(Script) " + d->filename );
     }
     return anyDirty;
 }

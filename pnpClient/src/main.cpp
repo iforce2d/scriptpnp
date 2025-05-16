@@ -1610,7 +1610,11 @@ int main(int, char**)
 
         if (ImGui::BeginPopupModal("Unsaved documents", NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::Text("There are unsaved documents - exit anyway?");
+            ImGui::Text("These documents are unsaved - exit anyway?");
+
+            for ( string fn : dirtyDocuments ) {
+                ImGui::Text( ("   " + fn).c_str() );
+            }
 
             ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));

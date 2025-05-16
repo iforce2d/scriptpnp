@@ -52,6 +52,8 @@ struct scriptParams_t {
     std::vector< scriptParam_t > paramList;
 };
 
+extern std::vector<std::string> dirtyDocuments;
+
 class CodeEditorWindow* ensureEditorOpenForDocument( std::string type, std::string path );
 void saveAllDocuments(std::vector<class CodeEditorDocument*> &documents);
 bool isAnyDocumentDirty(bool &allDocsHaveOwnFile);
