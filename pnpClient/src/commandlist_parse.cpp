@@ -554,6 +554,19 @@ Command* parse_sync(programParseState_t& parseState, string params) {
     return cmd;
 }
 
+Command* parse_pushmotionlimits(programParseState_t& parseState, string params) {
+    Command_pushpop* cmd = new Command_pushpop();
+    cmd->isPush = 1;
+    cmd->pushPopWhat = PPW_MOTION_LIMITS;
+    return cmd;
+}
+
+Command* parse_popmotionlimits(programParseState_t& parseState, string params) {
+    Command_pushpop* cmd = new Command_pushpop();
+    cmd->isPush = 0;
+    cmd->pushPopWhat = PPW_MOTION_LIMITS;
+    return cmd;
+}
 
 
 bool getCommandString(string& s, const char* what) {
@@ -626,6 +639,9 @@ void setupCommandParseMappings() {
     parseMappings["r"] =                makeCommandParseConfig(parse_rotate, true);
 
     parseMappings["sync"] =             makeCommandParseConfig(parse_sync, false);
+
+    parseMappings["pushml"] =           makeCommandParseConfig(parse_pushmotionlimits, false);
+    parseMappings["popml"] =            makeCommandParseConfig(parse_popmotionlimits, false);
 }
 
 //bool parseCommandList(CodeEditorDocument* document, CommandList& program) {

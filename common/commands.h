@@ -2,6 +2,7 @@
 #define COMMANDS_H
 
 #include <string.h>
+#include <stack>
 
 #include "scv/planner.h"
 
@@ -24,6 +25,7 @@
     tmpMacro(CT_ROTATETO)\
     tmpMacro(CT_SYNC)\
     tmpMacro(CT_SET_CORNER_BLEND_OVERLAP)\
+    tmpMacro(CT_PUSHPOP)\
     tmpMacro(CT_MAX)
 
 
@@ -318,7 +320,53 @@ public:
     }
 };
 
+enum pushPopWhat_t {
+    PPW_MOTION_LIMITS
+};
+
+class Command_pushpop : public Command {
+public:
+    uint8_t isPush;
+    uint8_t pushPopWhat;
+
+    Command_pushpop() {
+        type = CT_PUSHPOP;
+        isPush = 1;
+        pushPopWhat = PPW_MOTION_LIMITS;
+    }
+
+    int getSize() {
+        return Command::getSize()
+        + sizeof(isPush)
+        + sizeof(pushPopWhat);
+    }
+
+    int pack(uint8_t* data) {
+        int pos = Command::pack(data);
+        PACK_FIELD(isPush);
+        PACK_FIELD(pushPopWhat);
+        return pos;
+    }
+
+    int unpack(uint8_t* data) {
+        int pos = Command::unpack(data);
+        UNPACK_FIELD(isPush);
+        UNPACK_FIELD(pushPopWhat);
+        return pos;
+    }
+};
+
 Command* getCommandOfType(int t);
 const char* getCommandName(uint8_t type);
+
+void applyMoveLimitsIfExisting(motionLimits& srcLimits, motionLimits& dstLimits, scv::move& m);
+void applyRotateLimitsIfExisting(motionLimits& srcLimits, motionLimits* dstLimits, scv::rotate* r, int axis);
+
+typedef struct {
+    motionLimits moveLimits;
+    motionLimits rotateLimits[NUM_ROTATION_AXES];
+} motionLimitStatus;
+
+extern std::stack<motionLimitStatus> motionLimitStatusStack;
 
 #endif

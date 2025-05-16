@@ -307,32 +307,30 @@ void loadCommandsPreview(CommandList& program, planner* plan) {
         }
         else if ( cmd->type == CT_SET_MOVE_LIMITS ) {
             Command_setMoveLimits* cmdSetLimits = (Command_setMoveLimits*)cmd;
-            if ( cmdSetLimits->limits.vel != INVALID_FLOAT ) {
-                m.vel = cmdSetLimits->limits.vel;
-                previewMoveLimits.vel = m.vel;
-            }
-            if ( cmdSetLimits->limits.acc != INVALID_FLOAT ) {
-                m.acc = cmdSetLimits->limits.acc;
-                previewMoveLimits.acc = m.acc;
-            }
-            if ( cmdSetLimits->limits.jerk != INVALID_FLOAT ) {
-                m.jerk = cmdSetLimits->limits.jerk;
-                previewMoveLimits.jerk = m.jerk;
-            }
+            applyMoveLimitsIfExisting( cmdSetLimits->limits, previewMoveLimits, m );
         }
         else if ( cmd->type == CT_SET_ROTATE_LIMITS ) {
             Command_setRotateLimits* cmdSetLimits = (Command_setRotateLimits*)cmd;
-            if ( cmdSetLimits->limits.vel != INVALID_FLOAT ) {
-                r[cmdSetLimits->axis].vel = cmdSetLimits->limits.vel;
-                previewRotateLimits.vel = cmdSetLimits->limits.vel;
+            applyRotateLimitsIfExisting( cmdSetLimits->limits, &previewRotateLimits, r, cmdSetLimits->axis );
+        }
+        else if ( cmd->type == CT_PUSHPOP ) {
+            Command_pushpop* cmdPushPop = (Command_pushpop*)cmd;
+            if ( cmdPushPop->isPush ) {
+                motionLimitStatus mls;
+                mls.moveLimits = previewMoveLimits;
+                mls.rotateLimits[0] = previewRotateLimits;
+                motionLimitStatusStack.push( mls );
             }
-            if ( cmdSetLimits->limits.acc != INVALID_FLOAT ) {
-                r[cmdSetLimits->axis].acc = cmdSetLimits->limits.acc;
-                previewRotateLimits.acc = cmdSetLimits->limits.acc;
-            }
-            if ( cmdSetLimits->limits.jerk != INVALID_FLOAT ) {
-                r[cmdSetLimits->axis].jerk = cmdSetLimits->limits.jerk;
-                previewRotateLimits.jerk = cmdSetLimits->limits.jerk;
+            else {
+                if ( ! motionLimitStatusStack.empty() ) {
+                    motionLimitStatus mls = motionLimitStatusStack.top();
+                    motionLimitStatusStack.pop();
+                    applyMoveLimitsIfExisting( mls.moveLimits, previewMoveLimits, m );
+                    applyRotateLimitsIfExisting( mls.rotateLimits[0], &previewRotateLimits, r, 0 );
+                }
+                else {
+                    g_log.log(LL_WARN, "Motion limits popped when stack empty!");
+                }
             }
         }
         else if ( cmd->type == CT_PWM_OUTPUT ) {

@@ -489,7 +489,7 @@ bool appendGeneratedClasses(string moduleName) {
             }
 
 
-            printf( classDef.c_str() ); fflush(stdout);
+            //printf( classDef.c_str() ); fflush(stdout);
 
             string sectionName = tableName+"_section";
             if ( ! addScriptSection(moduleName, sectionName.c_str(), classDef.c_str()) ) {

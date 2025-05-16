@@ -5,7 +5,7 @@
 
 #include "commandlist.h"
 #include "pnpMessages.h"
-
+#include "log.h"
 
 using namespace std;
 
@@ -74,6 +74,7 @@ bool CommandList::unpack(uint8_t* data) {
     pos += sizeof(numCommands);
 
     for (int i = 0; i < numCommands; i++) {
+        g_log.log(LL_DEBUG, "looping %d", i);
         Command* cmd = Command::unpack(data, pos);
         if ( cmd )
             commands.push_back(cmd);
