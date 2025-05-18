@@ -712,9 +712,21 @@ bool script_runCommandList_dict(std::string filename, void *d)
 
             if ( val == INVALID_FLOAT )
                 g_log.log(LL_WARN, "Ignoring dictionary entry '%s'", keyName.c_str());
+            else if ( val != val )
+                g_log.log(LL_WARN, "Ignoring invalid (NaN) dictionary entry '%s'", keyName.c_str());
             else {
                 char buf[64];
-                sprintf(buf, "%.10g", val); // omit trailing zeroes
+                // I went back and forward between %f and %g a couple times. There was some
+                // problem with %f having trailing zeroes that I don't recall. Using %g did
+                // fix that, but very small values would end up with a "-e06 " suffix which
+                // was even worse. To compromise, use %f and remove trailing zeroes myself.
+                sprintf(buf, "%.8f", val);
+                int len = strlen(buf)-1;
+                while ( buf[len] == '0' && len > 0 ) {
+                    buf[len--] = 0;
+                }
+                if ( buf[len] == '.' && len > 0 )
+                    buf[len] = 0;
                 subs[keyName] = string(buf);
             }
         }
