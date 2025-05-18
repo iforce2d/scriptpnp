@@ -1139,11 +1139,11 @@ int main() {
         if ( didRecv ) {
 
             if ( msgType == MT_SET_PROGRAM ) {
-                if ( homing_homedAxes < 0x07 ) {
+                /*if ( homing_homedAxes < 0x07 ) {
                     g_log.log(LL_ERROR, "Ignoring program, not homed");
                     rejectedTrajectoryResult = TR_FAIL_NOT_HOMED;
                 }
-                else if ( mStatus.mode != MM_NONE ) {
+                else*/ if ( mStatus.mode != MM_NONE ) {
                     g_log.log(LL_ERROR, "Ignoring program, not in idle state");
                 }
                 else {
@@ -1256,32 +1256,34 @@ int main() {
                         }
                         else if ( cmd->type == CT_SET_MOVE_LIMITS ) {
                             Command_setMoveLimits* cmdSetLimits = (Command_setMoveLimits*)cmd;
-                            if ( cmdSetLimits->limits.vel != INVALID_FLOAT ) {
-                                m1.vel = cmdSetLimits->limits.vel;
-                                currentMoveLimits.vel = m1.vel;
-                            }
-                            if ( cmdSetLimits->limits.acc != INVALID_FLOAT ) {
-                                m1.acc = cmdSetLimits->limits.acc;
-                                currentMoveLimits.acc = m1.acc;
-                            }
-                            if ( cmdSetLimits->limits.jerk != INVALID_FLOAT ) {
-                                m1.jerk = cmdSetLimits->limits.jerk;
-                                currentMoveLimits.jerk = m1.jerk;
-                            }
+                            applyMoveLimitsIfExisting( cmdSetLimits->limits, currentMoveLimits, m1 );
                         }
                         else if ( cmd->type == CT_SET_ROTATE_LIMITS ) {
                             Command_setRotateLimits* cmdSetLimits = (Command_setRotateLimits*)cmd;
-                            if ( cmdSetLimits->limits.vel != INVALID_FLOAT ) {
-                                r1[cmdSetLimits->axis].vel = cmdSetLimits->limits.vel;
-                                currentRotationLimits[cmdSetLimits->axis].vel = r1[cmdSetLimits->axis].vel;
+                            applyRotateLimitsIfExisting( cmdSetLimits->limits, currentRotationLimits, r1, cmdSetLimits->axis );
+                        }
+                        else if ( cmd->type == CT_PUSHPOP ) {
+                            Command_pushpop* cmdPushPop = (Command_pushpop*)cmd;
+                            if ( cmdPushPop->isPush ) {
+                                motionLimitStatus mls;
+                                mls.moveLimits = currentMoveLimits;
+                                for (int k = 0; k < NUM_ROTATION_AXES; k++) {
+                                    mls.rotateLimits[k] = currentRotationLimits[k];
+                                }
+                                motionLimitStatusStack.push( mls );
                             }
-                            if ( cmdSetLimits->limits.acc != INVALID_FLOAT ) {
-                                r1[cmdSetLimits->axis].acc = cmdSetLimits->limits.acc;
-                                currentRotationLimits[cmdSetLimits->axis].acc = r1[cmdSetLimits->axis].acc;
-                            }
-                            if ( cmdSetLimits->limits.jerk != INVALID_FLOAT ) {
-                                r1[cmdSetLimits->axis].jerk = cmdSetLimits->limits.jerk;
-                                currentRotationLimits[cmdSetLimits->axis].jerk = r1[cmdSetLimits->axis].jerk;
+                            else {
+                                if ( ! motionLimitStatusStack.empty() ) {
+                                    motionLimitStatus mls = motionLimitStatusStack.top();
+                                    motionLimitStatusStack.pop();
+                                    applyMoveLimitsIfExisting( mls.moveLimits, currentMoveLimits, m1 );
+                                    for (int k = 0; k < NUM_ROTATION_AXES; k++) {
+                                        applyRotateLimitsIfExisting( mls.rotateLimits[k], currentRotationLimits, r1, k );
+                                    }
+                                }
+                                else {
+                                    g_log.log(LL_WARN, "Motion limits popped when stack empty!");
+                                }
                             }
                         }
                         else if ( cmd->type == CT_PWM_OUTPUT ) {
