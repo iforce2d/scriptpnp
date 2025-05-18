@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <atomic>
 #include <chrono>
+#include <thread>
 
 #include "libuvc/libuvc.h"
 #include "usbcamera.h"
@@ -1143,6 +1144,7 @@ bool grabUSBCameraFrame(int index, videoFrameBuffers_t* buffers) {
             return false; // no grab after 200 millseconds
         }
         retries--;
+        this_thread::sleep_for( 1ms );
     }
     if ( retries < 1 ) {
         g_log.log(LL_WARN, "grabFrame giving up after 1000 attempts!");

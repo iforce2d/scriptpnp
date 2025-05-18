@@ -420,8 +420,8 @@ void script_drawRotatedRect(script_rotatedRect& r)
     GET_THREAD_CONTEXT_ELSE
         return;
 
-    float c = cos( r.angle );
-    float s = sin( r.angle );
+    float c = cos( r.angle * DEGTORAD );
+    float s = sin( r.angle * DEGTORAD );
 
     float hw = r.w * 0.5;
     float hh = r.h * 0.5;
@@ -1519,7 +1519,7 @@ script_rotatedRect* script_minAreaRect(float minRatio, float maxRatio, float min
     }
 
 
-    rr.angle = -bestRadians;
+    rr.angle = -bestRadians * RADTODEG;
 
     float c = cos( -bestRadians );
     float s = sin( -bestRadians );
