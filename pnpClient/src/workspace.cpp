@@ -54,6 +54,7 @@ bool show_table_views = false;
 bool show_table_settings = false;
 bool show_combobox_entries = false;
 bool show_duplicate_table_view = false;
+bool show_find_dialog = false;
 
 string workspaceInfoSaveRequestedTitle = "";
 string workspaceInfoLoadRequestedTitle = "";

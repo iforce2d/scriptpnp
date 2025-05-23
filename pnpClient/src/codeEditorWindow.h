@@ -54,8 +54,8 @@ public:
 
     //bool saveDBFile(std::string path, bool allowOverwriteExisting, std::string &errMsg);
     //bool loadDBFile(std::string path, std::string &errMsg);
-
-    void showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete);
+    
+    void showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete, bool &doFind);
     void showOpenDialogPopup(bool openingNow);
     void showSaveAsDialogPopup(bool openingNow);
     void showTabBar(/*CodeEditorDocument *doc,*/ bool &doConfirmClose, CodeEditorDocument *&docToClose);
@@ -83,5 +83,7 @@ bool saveDBFile(CodeEditorDocument* doc, std::string path, bool allowOverwriteEx
 void gotoCodeCompileError(CodeEditorWindow* w, errorGotoInfo &info);
 
 bool deleteDBFile(CodeEditorDocument* doc);
+
+void showFindDialog(bool* p_open, bool escWasPressed);
 
 #endif // CODE_EDITOR_WINDOW_H

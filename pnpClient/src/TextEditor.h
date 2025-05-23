@@ -45,6 +45,7 @@ public:
         ErrorMarkerTooltipTitle,
         WarningMarkerTooltipTitle,
         ErrorMarkerTooltipDetails,
+        FindHighlight,
 		Max
 	};
 
@@ -120,6 +121,11 @@ public:
 			return mColumn >= o.mColumn;
 		}
 	};
+
+    struct HighlightRange {
+        Coordinates start;
+        Coordinates end;
+    };
 
 	struct Identifier
 	{
@@ -202,7 +208,7 @@ public:
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
 	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers; }
 
-	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
+    void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false, bool isFindDialogDoc = false);
 	void SetText(const std::string& aText);
 	void SetTextLines(const std::vector<std::string>& aLines);
 	std::string GetText() const;
@@ -255,7 +261,11 @@ public:
 
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
-	static const Palette& GetRetroBluePalette();
+    static const Palette& GetRetroBluePalette();
+
+    void setHighlights(std::vector<HighlightRange> highlights);
+    void jumpToHighlight(int i);
+    void clearHighlights();
 
 private:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
@@ -265,6 +275,7 @@ private:
 		Coordinates mSelectionStart;
 		Coordinates mSelectionEnd;
 		Coordinates mCursorPosition;
+        std::vector<HighlightRange> highlights;
 	};
 
 	class UndoRecord
@@ -329,11 +340,11 @@ private:
 	void DeleteSelection();
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
-	ImU32 GetGlyphColor(const Glyph& aGlyph) const;
+    ImU32 GetGlyphColor(const Glyph& aGlyph) const;
 
 	void HandleKeyboardInputs();
 	void HandleMouseInputs();
-	void Render();
+    void Render(bool isFindDialogDoc);
 
 	float mLineSpacing;
 	Lines mLines;

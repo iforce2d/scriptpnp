@@ -960,6 +960,7 @@ bool allDocsHaveOwnFile = false;
 
 bool ctrlOJustPressed = false;
 bool ctrlSJustPressed = false;
+bool ctrlFJustPressed = false;
 
 void window_close_callback(GLFWwindow* window)
 {
@@ -1302,6 +1303,7 @@ int main(int, char**)
 
     bool ctrlOPressedLastTime = false;
     bool ctrlSPressedLastTime = false;
+    bool ctrlFPressedLastTime = false;
 
     //while (!glfwWindowShouldClose(window))
     while ( ! closeWindowNow )
@@ -1315,6 +1317,7 @@ int main(int, char**)
 
         ctrlOJustPressed = false;
         ctrlSJustPressed = false;
+        ctrlFJustPressed = false;
 
         bool anyCtrlPressed = ( glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ) ||
                               ( glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS );
@@ -1330,10 +1333,16 @@ int main(int, char**)
                     ctrlSJustPressed = true;
                 ctrlSPressedLastTime = true;
             }
+            if ( glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+                if ( ! ctrlFPressedLastTime )
+                    ctrlFJustPressed = true;
+                ctrlFPressedLastTime = true;
+            }
         }
         else {
             ctrlOPressedLastTime = false;
             ctrlSPressedLastTime = false;
+            ctrlFPressedLastTime = false;
         }
 
         string workspaceLayoutTitleToSave = wasWorkspaceInfoSaveRequested();
@@ -1370,7 +1379,7 @@ int main(int, char**)
             commandRequest_t req = createCommandRequest(MT_SET_ESTOP);
             req.setEstop.val = 0;
             sendCommandRequest(&req);
-            escWasPressed = false;
+            //escWasPressed = false; set this at end of main() so that other features (eg. find dialog) can use it
         }
 
         if ( functionKeyWasPressed ) {
@@ -2441,7 +2450,13 @@ int main(int, char**)
         if ( show_duplicate_table_view )
             showDuplicateTableView( &show_duplicate_table_view );
 
+        if ( show_find_dialog )
+            showFindDialog( &show_find_dialog, escWasPressed );
+
         int pressedTableButtonRowId = showTableViews();
+
+
+        escWasPressed = false;
 
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.f);

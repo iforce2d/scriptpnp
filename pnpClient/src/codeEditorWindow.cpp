@@ -24,6 +24,7 @@ extern ImFont* font_sourceCodePro;
 #define SAVEAS_DIALOG_ID    "Save as..."
 #define UNSAVED_DIALOG_ID   "Unsaved document"
 #define DELETE_DOCUMENT_ID   "Delete document"
+#define FINDDIALOG_WINDOW_TITLE "Find..."
 
 // these are for modal dialogs so should be ok as static?
 static string loadDbFileErrorMsg;
@@ -34,6 +35,8 @@ static CodeEditorDocument* docToCloseOrDelete = NULL; // only used during confir
 static vector<string> openableFilenames;
 static vector<string> alreadyOpenedFilenames;
 static int selectedOpenDocumentIndex = -1;
+
+CodeEditorDocument* findDialogActiveDocument = NULL;
 
 CodeEditorWindow::CodeEditorWindow(std::vector<CodeEditorDocument *> *docs, string id, int index)
 {
@@ -200,7 +203,7 @@ bool deleteDBFile(CodeEditorDocument* doc)
     return true;
 }
 
-void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete)
+void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete, bool &doFind)
 {
     if (ImGui::BeginMenuBar())
     {
@@ -210,9 +213,15 @@ void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, b
             {
                 doOpen = true;
             }
+
             if (ImGui::MenuItem("Save", "Ctrl+S", (bool*)NULL, currentDocument && currentDocument->hasOwnFile))
             {
                 doSave = true;
+            }
+
+            if (ImGui::MenuItem("Find", "Ctrl+F1", (bool*)NULL, currentDocument))
+            {
+                doFind = true;
             }
 
             if (ImGui::MenuItem("Save as", NULL, (bool*)NULL, currentDocument != NULL ))
@@ -437,7 +446,7 @@ void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfir
                     if ( currentFont )
                         ImGui::PushFont(currentFont);
                     preRenderDoc(activeDoc);
-                    activeDoc->editor.Render( "asdfasfasdf" );
+                    activeDoc->editor.Render( "asdfasfasdf", ImVec2(), false, activeDoc == findDialogActiveDocument );
                     if ( currentFont )
                         ImGui::PopFont();
 
@@ -618,8 +627,13 @@ void CodeEditorWindow::onDocumentClosed(CodeEditorDocument *doc)
     }*/
 }
 
+
+
 extern bool ctrlOJustPressed;
 extern bool ctrlSJustPressed;
+extern bool ctrlFJustPressed;
+
+bool justOpenedFindDialog = false;
 
 void CodeEditorWindow::render()
 {
@@ -640,6 +654,7 @@ void CodeEditorWindow::render()
         bool doSave = false;
         bool doSaveAs = false;
         bool doDelete = false;
+        bool doFind = false;
 
         if ( ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) ) {
             if ( ctrlOJustPressed )
@@ -650,9 +665,11 @@ void CodeEditorWindow::render()
                 else
                     doSaveAs = true;
             }
+            if ( ctrlFJustPressed )
+                doFind = true;
         }
 
-        showMenuBar( doOpen, doSave, doSaveAs, doDelete );
+        showMenuBar( doOpen, doSave, doSaveAs, doDelete, doFind );
 
         if ( doOpen ) {
             loadDbFileErrorMsg.clear();
@@ -677,6 +694,12 @@ void CodeEditorWindow::render()
             saveDbFileErrorMsg.clear();
             okayToOverwriteExisting = false;
             ImGui::OpenPopup(SAVEAS_DIALOG_ID);
+        }
+
+        if ( doFind ) {
+            findDialogActiveDocument = currentDocument;
+            show_find_dialog = true;
+            justOpenedFindDialog = true;
         }
 
         showOpenDialogPopup(doOpen);
@@ -827,3 +850,130 @@ void gotoCodeCompileError(CodeEditorWindow* w, errorGotoInfo &info)
 
 
 
+int maxFindEntries = 0;
+int currentFindEntry = 0;
+
+void findTextInEditor(string s) {
+    if ( ! findDialogActiveDocument ) {
+        g_log.log(LL_ERROR, "No active document for find dialog");
+        return;
+    }
+
+    g_log.log(LL_DEBUG, "Finding '%s'", s.c_str());
+
+    vector<TextEditor::HighlightRange> highlights;
+    int lineForFirstFocus = -1;
+
+    vector<string> lines;
+    findDialogActiveDocument->editor.GetTextLines(lines);
+    for (int i = 0; i < (int)lines.size(); i++) {
+        string& line = lines[i];
+        size_t pos = line.find( s );
+        if ( pos != std::string::npos ) {
+            g_log.log(LL_DEBUG, "Found '%s' at line %d pos %d", s.c_str(), i, (int)pos);
+            TextEditor::HighlightRange hr;
+            hr.start = TextEditor::Coordinates( i, pos );
+            hr.end = TextEditor::Coordinates( i, pos + s.size() );
+            if ( highlights.empty() )
+                lineForFirstFocus = i;
+            highlights.push_back( hr );
+        }
+    }
+
+    if ( lineForFirstFocus > -1 ) {
+
+        findDialogActiveDocument->editor.setHighlights( highlights );
+        findDialogActiveDocument->editor.jumpToHighlight(0);
+        currentFindEntry = 0;
+        maxFindEntries = highlights.size();
+    }
+    else {
+        findDialogActiveDocument->editor.clearHighlights();
+        currentFindEntry = 0;
+        maxFindEntries = 0;
+    }
+}
+
+void showFindDialog(bool* p_open, bool escWasPressed)
+{
+    string windowPrefix = FINDDIALOG_WINDOW_TITLE;
+
+    ImGui::Begin(windowPrefix.c_str(), p_open, ImGuiWindowFlags_AlwaysAutoResize);
+    {
+        if ( escWasPressed && ImGui::IsWindowFocused() ) {
+            findDialogActiveDocument = NULL;
+            show_find_dialog = false; // for next time
+        }
+
+        static char buf[128];
+
+        ImGui::Text("Text: ");
+        ImGui::SameLine();
+
+        if ( justOpenedFindDialog || ImGui::IsWindowAppearing() ) {
+            ImGui::SetWindowFocus();
+            ImGui::SetKeyboardFocusHere();
+            justOpenedFindDialog = false;
+        }
+
+        if ( ImGui::InputText("##findwhat", buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue ) ) {
+            // enter key was pressed
+            g_log.log(LL_DEBUG, "focused : %d", ImGui::IsWindowFocused() );
+            findTextInEditor( buf );
+            justOpenedFindDialog = true; // keep focus in text input
+        }
+
+        ImGui::Text("Occurrence: %d/%d", currentFindEntry + 1, maxFindEntries);
+
+        if ( findDialogActiveDocument && maxFindEntries > 0 ) {
+
+            ImGui::SameLine();
+
+            bool didDisable = false;
+            if ( currentFindEntry <= 0 ) {
+                ImGui::BeginDisabled();
+                didDisable = true;
+            }
+            if ( ImGui::ArrowButton("##prev", ImGuiDir_Left) ) {
+                currentFindEntry--;
+                findDialogActiveDocument->editor.jumpToHighlight( currentFindEntry );
+            }
+            if ( didDisable )
+                ImGui::EndDisabled();
+
+            ImGui::SameLine();
+
+            didDisable = false;
+            if ( currentFindEntry >= (maxFindEntries-1) ) {
+                ImGui::BeginDisabled();
+                didDisable = true;
+            }
+            if ( ImGui::ArrowButton("##next", ImGuiDir_Right) ) {
+                currentFindEntry++;
+                findDialogActiveDocument->editor.jumpToHighlight( currentFindEntry );
+            }
+            if ( didDisable )
+                ImGui::EndDisabled();
+        }
+
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.9f, 0.3f, 1.0f));
+        if ( ImGui::Button("Find", ImVec2(120, 0))) {
+            findTextInEditor( buf );
+        }
+        ImGui::PopStyleColor(3);
+
+        ImGui::SameLine();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+        if (ImGui::Button("Close", ImVec2(120, 0))) {
+            show_find_dialog = false;
+        }
+        ImGui::PopStyleColor(3);
+
+        ImGui::End();
+    }
+
+}

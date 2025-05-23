@@ -32,6 +32,7 @@ extern bool show_table_views;
 extern bool show_table_settings;
 extern bool show_combobox_entries;
 extern bool show_duplicate_table_view;
+extern bool show_find_dialog;
 
 extern std::string usbCameraFunctionComboboxEntries;
 extern std::string tableButtonFunctionEntries;

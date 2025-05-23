@@ -455,6 +455,27 @@ ImU32 TextEditor::GetGlyphColor(const Glyph & aGlyph) const
 	return color;
 }
 
+void TextEditor::setHighlights(std::vector<HighlightRange> highlights)
+{
+    mState.highlights = highlights;
+}
+
+void TextEditor::jumpToHighlight(int i)
+{
+    if ( i < 0 || i >= (int)mState.highlights.size() )
+        return;
+
+    TextEditor::Coordinates coords;
+    coords.mLine = mState.highlights[i].start.mLine;
+    coords.mColumn = 0;
+    SetCursorPosition(coords);
+}
+
+void TextEditor::clearHighlights()
+{
+    mState.highlights.clear();
+}
+
 void TextEditor::HandleKeyboardInputs()
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -615,7 +636,7 @@ void TextEditor::HandleMouseInputs()
 	}
 }
 
-void TextEditor::Render()
+void TextEditor::Render(bool isFindDialogDoc)
 {
 	/* Compute mCharAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
 	const float fontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
@@ -677,6 +698,27 @@ void TextEditor::Render()
 			float sstart = -1.0f;
 			float ssend = -1.0f;
 
+            if ( isFindDialogDoc ) {
+                for ( HighlightRange& hr : mState.highlights ) {
+                    sstart = -1.0f;
+                    ssend = -1.0f;
+                    if ( hr.start.mLine == lineNo ) {
+                        if (hr.start <= lineEndCoord)
+                            sstart = hr.start > lineStartCoord ? TextDistanceToLineStart(hr.start) : 0.0f;
+                        if (hr.end > lineStartCoord)
+                            ssend = TextDistanceToLineStart(hr.end < lineEndCoord ? hr.end : lineEndCoord);
+                    }
+                    if (sstart != -1 && ssend != -1 && sstart < ssend)
+                    {
+                        ImVec2 vstart(lineStartScreenPos.x + mTextStart + sstart, lineStartScreenPos.y);
+                        ImVec2 vend(lineStartScreenPos.x + mTextStart + ssend, lineStartScreenPos.y + mCharAdvance.y);
+                        drawList->AddRectFilled(vstart, vend, mPalette[(int)PaletteIndex::FindHighlight]);
+                    }
+                }
+            }
+
+            sstart = -1.0f;
+            ssend = -1.0f;
 			assert(mState.mSelectionStart <= mState.mSelectionEnd);
 			if (mState.mSelectionStart <= lineEndCoord)
 				sstart = mState.mSelectionStart > lineStartCoord ? TextDistanceToLineStart(mState.mSelectionStart) : 0.0f;
@@ -691,7 +733,7 @@ void TextEditor::Render()
 				ImVec2 vstart(lineStartScreenPos.x + mTextStart + sstart, lineStartScreenPos.y);
 				ImVec2 vend(lineStartScreenPos.x + mTextStart + ssend, lineStartScreenPos.y + mCharAdvance.y);
 				drawList->AddRectFilled(vstart, vend, mPalette[(int)PaletteIndex::Selection]);
-			}
+            }
 
 			// Draw breakpoints
 			auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
@@ -840,12 +882,12 @@ void TextEditor::Render()
 	if (mScrollToCursor)
 	{
 		EnsureCursorVisible();
-		ImGui::SetWindowFocus();
+        //ImGui::SetWindowFocus();
 		mScrollToCursor = false;
 	}
 }
 
-void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
+void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder, bool isFindDialogDoc)
 {
 	mWithinRender = true;
 	mTextChanged = false;
@@ -864,7 +906,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	HandleKeyboardInputs();
 	HandleMouseInputs();
 	ColorizeInternal();
-	Render();
+    Render(isFindDialogDoc);
 
 	ImGui::PopAllowKeyboardFocus();
 	ImGui::EndChild();
@@ -1655,7 +1697,8 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 		0x40a0a0a0, // Current line edge
         0xff0000ff, // Error Marker Tooltip Title
                                    0xff99ffff, // Warning Marker Tooltip Title
-        0xff00ffff, // Error Marker Tooltip Details
+        0xff00ffff, // Error Marker Tooltip Details        
+        0xff0befff, // Find highlight
 	} };
 	return p;
 }
@@ -1688,6 +1731,7 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
         0xff0000ff, // Error Marker Tooltip Title
                                    0xff99ffff, // Warning Marker Tooltip Title
         0xff00ffff, // Error Marker Tooltip Details
+        0xff0befff, // Find highlight
 	} };
 	return p;
 }
@@ -1720,6 +1764,7 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
         0xff0000ff, // Error Marker Tooltip Title
                                    0xff99ffff, // Warning Marker Tooltip Title
         0xff00ffff, // Error Marker Tooltip Details
+        0xff0befff, // Find highlight
 	} };
 	return p;
 }
@@ -2693,7 +2738,8 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::AngelScrip
 			"from", "funcdef", "function", "get", "if", "import", "in", "inout", "int", "interface", "int8", "int16", "int32", "int64", "is", "mixin", "namespace", "not",
 			"null", "or", "out", "override", "private", "protected", "return", "set", "shared", "super", "switch", "this ", "true", "typedef", "uint", "uint8", "uint16", "uint32",
             "uint64", "void", "while", "xor",
-            "string", "dictionary", "array"
+            "string", "dictionary", "array",
+            "dbRow", "dbResult","blob","rect","vec3","serialReply","qrcode","affine"
 		};
 
 		for (auto& k : keywords)
