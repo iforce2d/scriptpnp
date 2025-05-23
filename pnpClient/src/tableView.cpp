@@ -636,6 +636,7 @@ void sortWithSortSpecs(ImGuiTableSortSpecs* sort_specs, TableData& td)
 }
 
 bool shouldDoRefresh = false;
+bool shouldDoNewRow = false;
 
 void showConfirmFetchDialog() {
     if (ImGui::BeginPopupModal("Confirm refresh", NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -647,6 +648,33 @@ void showConfirmFetchDialog() {
         ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.9f, 0.3f, 1.0f));
         if ( ImGui::Button("Refresh", ImVec2(120, 0))) {
             shouldDoRefresh = true;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::PopStyleColor(3);
+
+        ImGui::SameLine();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::PopStyleColor(3);
+
+        ImGui::EndPopup();
+    }
+}
+
+void showConfirmNewRowDialog() {
+    if (ImGui::BeginPopupModal("Confirm new row", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("This will cause unsaved changes to be reset - continue?");
+
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.9f, 0.3f, 1.0f));
+        if ( ImGui::Button("Refresh", ImVec2(120, 0))) {
+            shouldDoNewRow = true;
             ImGui::CloseCurrentPopup();
         }
         ImGui::PopStyleColor(3);
@@ -1170,7 +1198,19 @@ int showTableViews()
 
         ImGui::Text("%d rows", (int)td.grid.size());
 
+        shouldDoNewRow = false;
         if ( ImGui::Button("New row") ) {
+            if ( td.dirty ) {
+                ImGui::OpenPopup("Confirm new row");
+            }
+            else {
+                shouldDoNewRow = true;
+            }
+        }
+
+        showConfirmNewRowDialog();
+
+        if ( shouldDoNewRow ) {
             addNewTableRow( td.name );
             addTableToRefresh( td.name );
         }
