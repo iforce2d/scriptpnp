@@ -545,6 +545,10 @@ void showTableSettings(bool* p_open)
 
         if (ImGui::BeginPopupModal("Delete table", NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                ImGui::CloseCurrentPopup();
+            }
+
             ImGui::Text(("Permanently delete table '"+tableToDelete+"' ?").c_str());
 
             ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
@@ -641,6 +645,10 @@ bool shouldDoNewRow = false;
 void showConfirmFetchDialog() {
     if (ImGui::BeginPopupModal("Confirm refresh", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         ImGui::Text("There are unsaved changes - refresh anyway?");
 
         ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
@@ -668,6 +676,10 @@ void showConfirmFetchDialog() {
 void showConfirmNewRowDialog() {
     if (ImGui::BeginPopupModal("Confirm new row", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         ImGui::Text("This will cause unsaved changes to be reset - continue?");
 
         ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));

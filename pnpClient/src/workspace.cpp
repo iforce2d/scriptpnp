@@ -425,6 +425,10 @@ void showWorkspaceLayoutSaveAsDialogPopup(bool openingNow)
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(SAVELAYOUTAS_DIALOG_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         static char path[256] = "";
 
         ImGui::Text("Title:");
@@ -504,6 +508,10 @@ void showWorkspaceLayoutOpenDialogPopup()
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(OPENLAYOUT_DIALOG_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         string pathToOpen;
 
         if (ImGui::BeginListBox("##openpath"))

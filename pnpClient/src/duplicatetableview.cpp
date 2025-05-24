@@ -88,6 +88,10 @@ void showDuplicateTableView(bool* p_open)
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal("Existing table", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         ImGui::Text("Destination table '%s' already exists\nand will be overwritten, continue?", tableTo.c_str());
 
         ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));

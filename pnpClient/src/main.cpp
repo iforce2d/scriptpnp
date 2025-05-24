@@ -1619,6 +1619,10 @@ int main(int, char**)
 
         if (ImGui::BeginPopupModal("Unsaved documents", NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                ImGui::CloseCurrentPopup();
+            }
+
             ImGui::Text("These documents are unsaved - exit anyway?");
 
             for ( string fn : dirtyDocuments ) {

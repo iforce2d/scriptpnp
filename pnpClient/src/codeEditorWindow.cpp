@@ -311,16 +311,9 @@ void CodeEditorWindow::showOpenDialogPopup(bool openingNow)
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(getOpenDialogTitle().c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        //static char path[256] = "";
-
-        /*ImGui::Text("Path:");
-        ImGui::SameLine();
-        if ( openingNow || doRefocusOnInputAfterFileSelectFail )
-            ImGui::SetKeyboardFocusHere();
-        bool enterWasPressed = ImGui::InputText("##load", path, sizeof(path), ImGuiInputTextFlags_EnterReturnsTrue);
-
-        doRefocusOnInputAfterFileSelectFail = false;
-        */
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
 
         string pathToOpen;
 
@@ -393,6 +386,10 @@ void CodeEditorWindow::showSaveAsDialogPopup(bool openingNow)
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(SAVEAS_DIALOG_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         static char path[256] = "";
 
         ImGui::Text("Path:");
@@ -444,6 +441,10 @@ void CodeEditorWindow::showRenameDialogPopup(bool openingNow)
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(RENAME_DIALOG_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         static char path[256] = "";
 
         ImGui::Text("Path:");
@@ -557,6 +558,10 @@ void CodeEditorWindow::showConfirmCloseDialog(CodeEditorDocument *doc)
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(UNSAVED_DIALOG_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         ImGui::Text("Document is not saved, close anyway?");
 
         ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
@@ -588,6 +593,10 @@ void CodeEditorWindow::showConfirmDeleteDialog(CodeEditorDocument *doc)
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(DELETE_DOCUMENT_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+        }
+
         ImGui::Text("Document '%s' will be PERMANENTLY deleted!", doc->filename.c_str());
 
         ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
