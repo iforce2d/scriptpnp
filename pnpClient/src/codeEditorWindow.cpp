@@ -22,6 +22,7 @@ extern ImFont* font_sourceCodePro;
 
 //#define OPEN_DIALOG_ID      "Open..."
 #define SAVEAS_DIALOG_ID    "Save as..."
+#define RENAME_DIALOG_ID    "Rename..."
 #define UNSAVED_DIALOG_ID   "Unsaved document"
 #define DELETE_DOCUMENT_ID   "Delete document"
 #define FINDDIALOG_WINDOW_TITLE "Find..."
@@ -29,6 +30,7 @@ extern ImFont* font_sourceCodePro;
 // these are for modal dialogs so should be ok as static?
 static string loadDbFileErrorMsg;
 static string saveDbFileErrorMsg;
+static string renameDbFileErrorMsg;
 static bool okayToOverwriteExisting = false;
 static bool doRefocusOnInputAfterFileSelectFail = false;
 static CodeEditorDocument* docToCloseOrDelete = NULL; // only used during confirmation dialog
@@ -203,7 +205,29 @@ bool deleteDBFile(CodeEditorDocument* doc)
     return true;
 }
 
-void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete, bool &doFind)
+bool renameDBFile(CodeEditorDocument* doc, string path, bool allowOverwriteExisting, string &errMsg)
+{
+    string previousFilename = doc->filename;
+
+    CodeEditorDocument* existingDoc = doc->fileType == "script" ?
+        getDocumentByPath(&scriptDocuments, path) :
+        getDocumentByPath(&commandDocuments, path);
+
+    if ( ! saveDBFile( doc, path, okayToOverwriteExisting, errMsg ) )
+        return false;
+
+    if ( existingDoc ) {
+        existingDoc->shouldClose = true;
+    }
+
+    if ( ! deleteExistingDBFile(doc->fileType, previousFilename, errMsg) ) {
+        g_log.log(LL_ERROR, "renameDBFile: failed to delete old file !");
+    }
+
+    return true;
+}
+
+void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete, bool &doFind, bool &doRename)
 {
     if (ImGui::BeginMenuBar())
     {
@@ -227,6 +251,11 @@ void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, b
             if (ImGui::MenuItem("Save as", NULL, (bool*)NULL, currentDocument != NULL ))
             {
                 doSaveAs = true;
+            }
+
+            if (ImGui::MenuItem("Rename", NULL, (bool*)NULL, currentDocument && currentDocument->hasOwnFile ))
+            {
+                doRename = true;
             }
 
             if (ImGui::MenuItem("Import", NULL, (bool*)NULL, true ))
@@ -401,6 +430,57 @@ void CodeEditorWindow::showSaveAsDialogPopup(bool openingNow)
 
         if ( ! saveDbFileErrorMsg.empty() ) {
             ImGui::TextColored( ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "%s", saveDbFileErrorMsg.c_str());
+            if ( strlen(path) > 0 )
+                ImGui::Checkbox("Overwrite existing file", &okayToOverwriteExisting);
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
+void CodeEditorWindow::showRenameDialogPopup(bool openingNow)
+{
+    ImVec2 center = ImGui::GetMainViewport()->GetWorkCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal(RENAME_DIALOG_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        static char path[256] = "";
+
+        ImGui::Text("Path:");
+        ImGui::SameLine();
+        if ( openingNow || doRefocusOnInputAfterFileSelectFail )
+            ImGui::SetKeyboardFocusHere();
+        string textBefore = path;
+        bool enterWasPressed = ImGui::InputText("##rename", path, sizeof(path), ImGuiInputTextFlags_EnterReturnsTrue);
+        bool textWasChanged = textBefore != path;
+
+        if ( textWasChanged )
+            renameDbFileErrorMsg = "";
+
+        doRefocusOnInputAfterFileSelectFail = false;
+
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.9f, 0.3f, 1.0f));
+        if ( enterWasPressed || ImGui::Button("OK", ImVec2(120, 0))) {
+            if ( renameDBFile(currentDocument, path, okayToOverwriteExisting, renameDbFileErrorMsg) )
+                ImGui::CloseCurrentPopup();
+            else
+                doRefocusOnInputAfterFileSelectFail = true;
+        }
+        ImGui::PopStyleColor(3);
+
+        ImGui::SameLine();
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::PopStyleColor(3);
+
+        if ( ! renameDbFileErrorMsg.empty() ) {
+            ImGui::TextColored( ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "%s", renameDbFileErrorMsg.c_str());
             if ( strlen(path) > 0 )
                 ImGui::Checkbox("Overwrite existing file", &okayToOverwriteExisting);
         }
@@ -655,6 +735,7 @@ void CodeEditorWindow::render()
         bool doSaveAs = false;
         bool doDelete = false;
         bool doFind = false;
+        bool doRename = false;
 
         if ( ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) ) {
             if ( ctrlOJustPressed )
@@ -669,7 +750,7 @@ void CodeEditorWindow::render()
                 doFind = true;
         }
 
-        showMenuBar( doOpen, doSave, doSaveAs, doDelete, doFind );
+        showMenuBar( doOpen, doSave, doSaveAs, doDelete, doFind, doRename );
 
         if ( doOpen ) {
             loadDbFileErrorMsg.clear();
@@ -702,8 +783,14 @@ void CodeEditorWindow::render()
             justOpenedFindDialog = true;
         }
 
+        if ( doRename ) {
+            renameDbFileErrorMsg.clear();
+            ImGui::OpenPopup(RENAME_DIALOG_ID);
+        }
+
         showOpenDialogPopup(doOpen);
         showSaveAsDialogPopup(doSaveAs);
+        showRenameDialogPopup(doRename);
 
         buttonFeedback.document = currentDocument;
         renderCustomSection();

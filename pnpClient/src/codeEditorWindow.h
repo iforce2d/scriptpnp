@@ -55,9 +55,10 @@ public:
     //bool saveDBFile(std::string path, bool allowOverwriteExisting, std::string &errMsg);
     //bool loadDBFile(std::string path, std::string &errMsg);
     
-    void showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete, bool &doFind);
+    void showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, bool &doDelete, bool &doFind, bool &doRename);
     void showOpenDialogPopup(bool openingNow);
     void showSaveAsDialogPopup(bool openingNow);
+    void showRenameDialogPopup(bool openingNow);
     void showTabBar(/*CodeEditorDocument *doc,*/ bool &doConfirmClose, CodeEditorDocument *&docToClose);
     void showConfirmCloseDialog(CodeEditorDocument* doc);
     void showConfirmDeleteDialog(CodeEditorDocument* doc);
