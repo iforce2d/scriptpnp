@@ -260,6 +260,9 @@ float script_getADC(int i);
 int32_t script_getEncoder();
 
 uint64_t script_millis();
+bool script_isServerConnected();
+bool script_isSPIConnected();
+uint8_t script_getHomedStatus();
 int script_getMachineMode();
 int script_getTrajectoryResult();
 int script_getHomingResult();

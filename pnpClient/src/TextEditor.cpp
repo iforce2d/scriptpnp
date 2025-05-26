@@ -1699,6 +1699,7 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
                                    0xff99ffff, // Warning Marker Tooltip Title
         0xff00ffff, // Error Marker Tooltip Details        
         0xff0befff, // Find highlight
+        0xff800080, // Type keyword
 	} };
 	return p;
 }
@@ -1732,6 +1733,7 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
                                    0xff99ffff, // Warning Marker Tooltip Title
         0xff00ffff, // Error Marker Tooltip Details
         0xff0befff, // Find highlight
+        0xff800080, // Type keyword
 	} };
 	return p;
 }
@@ -1765,6 +1767,7 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
                                    0xff99ffff, // Warning Marker Tooltip Title
         0xff00ffff, // Error Marker Tooltip Details
         0xff0befff, // Find highlight
+        0xff800080, // Type keyword
 	} };
 	return p;
 }
@@ -1924,6 +1927,8 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 					{
 						if (mLanguageDefinition.mKeywords.count(id) != 0)
 							token_color = PaletteIndex::Keyword;
+                        else if (mLanguageDefinition.mTypes.count(id) != 0)
+                            token_color = PaletteIndex::TypeKeyword;
 						else if (mLanguageDefinition.mIdentifiers.count(id) != 0)
 							token_color = PaletteIndex::KnownIdentifier;
 						else if (mLanguageDefinition.mPreprocIdentifiers.count(id) != 0)
@@ -2730,20 +2735,27 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::SQL()
 const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::AngelScript()
 {
 	static bool inited = false;
-	static LanguageDefinition langDef;
+    static LanguageDefinition langDef;
 	if (!inited)
 	{
 		static const char* const keywords[] = {
-			"and", "abstract", "auto", "bool", "break", "case", "cast", "class", "const", "continue", "default", "do", "double", "else", "enum", "false", "final", "float", "for",
-			"from", "funcdef", "function", "get", "if", "import", "in", "inout", "int", "interface", "int8", "int16", "int32", "int64", "is", "mixin", "namespace", "not",
-			"null", "or", "out", "override", "private", "protected", "return", "set", "shared", "super", "switch", "this ", "true", "typedef", "uint", "uint8", "uint16", "uint32",
-            "uint64", "void", "while", "xor",
-            "string", "dictionary", "array",
-            "dbRow", "dbResult","blob","rect","vec3","serialReply","qrcode","affine"
+            "and", "abstract", "break", "case", "cast", "const", "continue", "default", "do", "else", "false", "final", "for",
+            "from", "funcdef", "function", "get", "if", "import", "in", "inout", "int", "interface", "is", "mixin", "namespace", "not",
+            "null", "or", "out", "override", "private", "protected", "return", "set", "shared", "super", "switch", "this ", "true", "typedef",
+            "while", "xor",
 		};
 
 		for (auto& k : keywords)
 			langDef.mKeywords.insert(k);
+
+        static const char* const types[] = {
+            "class", "auto", "bool", "double", "enum", "float", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "void",
+            "string", "dictionary", "array",
+            "dbRow", "dbResult","blob","rect","vec3","serialReply","qrcode","affine"
+        };
+
+        for (auto& k : types)
+            langDef.mTypes.insert(k);
 
 		static const char* const identifiers[] = {
 			"cos", "sin", "tab", "acos", "asin", "atan", "atan2", "cosh", "sinh", "tanh", "log", "log10", "pow", "sqrt", "abs", "ceil", "floor", "fraction", "closeTo", "fpFromIEEE", "fpToIEEE",

@@ -46,6 +46,7 @@ public:
         WarningMarkerTooltipTitle,
         ErrorMarkerTooltipDetails,
         FindHighlight,
+        TypeKeyword,
 		Max
 	};
 
@@ -167,8 +168,9 @@ public:
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
 		typedef bool (*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
 
-		std::string mName;
-		Keywords mKeywords;
+        std::string mName;
+        Keywords mKeywords;
+        Keywords mTypes;
 		Identifiers mIdentifiers;
 		Identifiers mPreprocIdentifiers;
 		std::string mCommentStart, mCommentEnd, mSingleLineComment;

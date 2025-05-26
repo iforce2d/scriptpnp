@@ -812,6 +812,22 @@ void script_setPWMOut(float toWhat)
 }
 
 extern clientReport_t lastStatusReport;
+extern bool serverConnected;
+
+bool script_isServerConnected()
+{
+    return serverConnected;
+}
+
+bool script_isSPIConnected()
+{
+    return lastStatusReport.spiOk;
+}
+
+uint8_t script_getHomedStatus()
+{
+    return lastStatusReport.homedAxes;
+}
 
 bool script_getDigitalIn(int which)
 {

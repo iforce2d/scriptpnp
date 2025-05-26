@@ -454,6 +454,13 @@ bool setupScriptEngine()
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("uint64 millis()", asFUNCTION(script_millis), asCALL_CDECL);
     assert( r >= 0 );
+
+    r = engine->RegisterGlobalFunction("bool isServerConnected()", asFUNCTION(script_isServerConnected), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("bool isSPIConnected()", asFUNCTION(script_isSPIConnected), asCALL_CDECL);
+    assert( r >= 0 );
+    r = engine->RegisterGlobalFunction("uint getHomedStatus()", asFUNCTION(script_getHomedStatus), asCALL_CDECL);
+    assert( r >= 0 );
     r = engine->RegisterGlobalFunction("int getMachineMode()", asFUNCTION(script_getMachineMode), asCALL_CDECL);
     assert( r >= 0 );
     r = engine->RegisterGlobalFunction("int getTrajectoryResult()", asFUNCTION(script_getTrajectoryResult), asCALL_CDECL);

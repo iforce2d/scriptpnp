@@ -954,6 +954,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 //     ImGui::End();
 // }
 
+bool serverConnected = false;
+
 bool closeWindowNow = false;
 bool closeAttempted = false;
 bool allDocsHaveOwnFile = false;
@@ -1904,13 +1906,13 @@ int main(int, char**)
                 std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
                 long long timeSinceLastPublish = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastPublishTime).count();
 
-                bool connected = timeSinceLastPublish < 200;
-                if ( ! connected ) {
+                serverConnected = timeSinceLastPublish < 200;
+                if ( ! serverConnected ) {
                     firstTimeSetDone = false;
                     lastStatusReport = {0};
                 }
 
-                showStatusIndicator("Server connection", connected );
+                showStatusIndicator("Server connection", serverConnected );
                 ImGui::SameLine();
                 ImGui::Text(" (%lld ms)", timeSinceLastPublish);
                 showStatusIndicator("SPI connection", lastStatusReport.spiOk );

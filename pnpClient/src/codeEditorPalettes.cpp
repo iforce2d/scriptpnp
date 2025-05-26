@@ -31,5 +31,6 @@ const TextEditor::Palette myPalette = { {
     0xff99ffff, // Warning Marker Tooltip Title
     0xffdddddd, // Error/Warning Marker Tooltip Details
     0xff0befff, // Find highlight
+    0xff800080, // Type keyword
 } };
 
