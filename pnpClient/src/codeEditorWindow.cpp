@@ -7,6 +7,9 @@
 
 #include "nfd.h"
 
+#include "imgui_notify/font_awesome_5.h"
+#include "imgui_notify/fa_solid_900.h"
+
 #include "log.h"
 #include "codeEditorWindow.h"
 #include "codeEditorPalettes.h"
@@ -39,6 +42,7 @@ static vector<string> alreadyOpenedFilenames;
 static int selectedOpenDocumentIndex = -1;
 
 CodeEditorDocument* findDialogActiveDocument = NULL;
+CodeEditorDocument* lastFindExecutedDocument = NULL;
 
 CodeEditorWindow::CodeEditorWindow(std::vector<CodeEditorDocument *> *docs, string id, int index)
 {
@@ -307,6 +311,11 @@ void CodeEditorWindow::showMenuBar(bool &doOpen, bool &doSave, bool &doSaveAs, b
 
 void CodeEditorWindow::showOpenDialogPopup(bool openingNow)
 {
+    static char filterBuf[128];
+
+    if ( openingNow )
+        filterBuf[0] = 0;
+
     ImVec2 center = ImGui::GetMainViewport()->GetWorkCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(getOpenDialogTitle().c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -317,11 +326,18 @@ void CodeEditorWindow::showOpenDialogPopup(bool openingNow)
 
         string pathToOpen;
 
+        ImGui::SetNextItemWidth(250);
         if (ImGui::BeginListBox("##openpath"))
         {
             for (int n = 0; n < (int)openableFilenames.size(); n++)
             {
                 string thePath = openableFilenames[n];
+
+                if ( strlen(filterBuf) > 0 ) {
+                    if ( thePath.find(filterBuf) == std::string::npos )
+                        continue;
+                }
+
                 const bool isSelected = (selectedOpenDocumentIndex == n);
 
                 bool canOpen = ( std::find(alreadyOpenedFilenames.begin(), alreadyOpenedFilenames.end(), thePath) == alreadyOpenedFilenames.end() );
@@ -344,7 +360,12 @@ void CodeEditorWindow::showOpenDialogPopup(bool openingNow)
             ImGui::EndListBox();
         }
 
-        //bool canOpenSelected = selectedOpenDocumentIndex >= 0 && selectedOpenDocumentIndex < (int)openableFilenames.size();
+        ImGui::Text("Filter:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(-1);
+        if ( openingNow )
+            ImGui::SetKeyboardFocusHere();
+        ImGui::InputText("##filter", filterBuf, sizeof(filterBuf));
 
         if ( pathToOpen.empty() )
             ImGui::BeginDisabled();
@@ -520,6 +541,8 @@ void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfir
                     pendingSelectDocument = NULL;
                 }
 
+                CodeEditorDocument* docBefore = currentDocument;
+
                 if (ImGui::BeginTabItem(tabName, &isOpen, flags))
                 {
                     currentDocument = activeDoc;
@@ -534,6 +557,10 @@ void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfir
                     ImGui::EndTabItem();
                 }
 
+                if ( currentDocument != docBefore ) {
+                    findDialogActiveDocument = currentDocument;
+                }
+
                 if ( ! isOpen ) {
                     if ( activeDoc->dirty ) {
                         doConfirmClose = true;
@@ -545,7 +572,7 @@ void CodeEditorWindow::showTabBar(/*CodeEditorDocument* dogggc,*/ bool &doConfir
                 }
             }
 
-            if (ImGui::TabItemButton(" + ", ImGuiTabItemFlags_Trailing | ImGuiTabItemFlags_NoTooltip))
+            if (ImGui::TabItemButton(ICON_FA_PLUS_SQUARE, ImGuiTabItemFlags_Trailing | ImGuiTabItemFlags_NoTooltip))
                 newCodeDocument(documents, getDBFileType());
 
             ImGui::EndTabBar();
@@ -722,7 +749,8 @@ extern bool ctrlOJustPressed;
 extern bool ctrlSJustPressed;
 extern bool ctrlFJustPressed;
 
-bool justOpenedFindDialog = false;
+bool setKeyboardFocusOnFindDialog = false;
+bool selectAllTextInFindDialog = false;
 
 void CodeEditorWindow::render()
 {
@@ -757,6 +785,8 @@ void CodeEditorWindow::render()
             }
             if ( ctrlFJustPressed )
                 doFind = true;
+
+            findDialogActiveDocument = currentDocument;
         }
 
         showMenuBar( doOpen, doSave, doSaveAs, doDelete, doFind, doRename );
@@ -789,7 +819,8 @@ void CodeEditorWindow::render()
         if ( doFind ) {
             findDialogActiveDocument = currentDocument;
             show_find_dialog = true;
-            justOpenedFindDialog = true;
+            setKeyboardFocusOnFindDialog = true;
+            selectAllTextInFindDialog = true;
         }
 
         if ( doRename ) {
@@ -960,24 +991,35 @@ void findTextInEditor(string s) {
     vector<TextEditor::HighlightRange> highlights;
     int lineForFirstFocus = -1;
 
-    vector<string> lines;
-    findDialogActiveDocument->editor.GetTextLines(lines);
-    for (int i = 0; i < (int)lines.size(); i++) {
-        string& line = lines[i];
-        size_t pos = line.find( s );
-        if ( pos != std::string::npos ) {
-            g_log.log(LL_DEBUG, "Found '%s' at line %d pos %d", s.c_str(), i, (int)pos);
-            TextEditor::HighlightRange hr;
-            hr.start = TextEditor::Coordinates( i, pos );
-            hr.end = TextEditor::Coordinates( i, pos + s.size() );
-            if ( highlights.empty() )
-                lineForFirstFocus = i;
-            highlights.push_back( hr );
+    if ( ! s.empty() ) {
+        vector<string> lines;
+        findDialogActiveDocument->editor.GetTextLines(lines);
+        for (int i = 0; i < (int)lines.size(); i++) {
+            int startOffset = 0;
+            string& srcLine = lines[i];
+            string line = srcLine.substr( startOffset );
+            size_t pos = line.find( s );
+            while ( pos != std::string::npos ) {
+                //g_log.log(LL_DEBUG, "Found '%s' at line %d pos %d", s.c_str(), i, (int)pos);
+                int actualStartPos = startOffset + pos;
+                int actualEndPos = actualStartPos + s.size();
+                TextEditor::HighlightRange hr;
+                hr.start = TextEditor::Coordinates( i, actualStartPos );
+                hr.end = TextEditor::Coordinates( i, actualEndPos );
+                if ( highlights.empty() )
+                    lineForFirstFocus = i;
+                highlights.push_back( hr );
+                startOffset = actualEndPos;
+                line = srcLine.substr( startOffset );
+                pos = line.find( s );
+            }
         }
     }
 
-    if ( lineForFirstFocus > -1 ) {
+    if ( lastFindExecutedDocument && lastFindExecutedDocument != findDialogActiveDocument )
+        lastFindExecutedDocument->editor.clearHighlights();
 
+    if ( lineForFirstFocus > -1 ) {
         findDialogActiveDocument->editor.setHighlights( highlights );
         findDialogActiveDocument->editor.jumpToHighlight(0);
         currentFindEntry = 0;
@@ -988,6 +1030,8 @@ void findTextInEditor(string s) {
         currentFindEntry = 0;
         maxFindEntries = 0;
     }
+
+    lastFindExecutedDocument = findDialogActiveDocument;
 }
 
 void showFindDialog(bool* p_open, bool escWasPressed)
@@ -1006,22 +1050,28 @@ void showFindDialog(bool* p_open, bool escWasPressed)
         ImGui::Text("Text: ");
         ImGui::SameLine();
 
-        if ( justOpenedFindDialog || ImGui::IsWindowAppearing() ) {
+        if ( setKeyboardFocusOnFindDialog || ImGui::IsWindowAppearing() ) {
             ImGui::SetWindowFocus();
             ImGui::SetKeyboardFocusHere();
-            justOpenedFindDialog = false;
+            setKeyboardFocusOnFindDialog = false;
         }
 
-        if ( ImGui::InputText("##findwhat", buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue ) ) {
+        ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+        if ( selectAllTextInFindDialog ) {
+            flags |= ImGuiInputTextFlags_AutoSelectAll;
+        }
+
+        if ( ImGui::InputText("##findwhat", buf, sizeof(buf), flags ) ) {
             // enter key was pressed
-            g_log.log(LL_DEBUG, "focused : %d", ImGui::IsWindowFocused() );
+            //g_log.log(LL_DEBUG, "focused : %d", ImGui::IsWindowFocused() );
             findTextInEditor( buf );
-            justOpenedFindDialog = true; // keep focus in text input
+            setKeyboardFocusOnFindDialog = true; // keep focus in text input next time
+            selectAllTextInFindDialog = false;
         }
-
-        ImGui::Text("Occurrence: %d/%d", currentFindEntry + 1, maxFindEntries);
 
         if ( findDialogActiveDocument && maxFindEntries > 0 ) {
+
+            ImGui::Text("Occurrence: %d/%d", currentFindEntry + 1, maxFindEntries);
 
             ImGui::SameLine();
 
@@ -1031,8 +1081,12 @@ void showFindDialog(bool* p_open, bool escWasPressed)
                 didDisable = true;
             }
             if ( ImGui::ArrowButton("##prev", ImGuiDir_Left) ) {
-                currentFindEntry--;
-                findDialogActiveDocument->editor.jumpToHighlight( currentFindEntry );
+                if ( findDialogActiveDocument != lastFindExecutedDocument )
+                    findTextInEditor( buf );
+                else {
+                    currentFindEntry--;
+                    findDialogActiveDocument->editor.jumpToHighlight( currentFindEntry );
+                }
             }
             if ( didDisable )
                 ImGui::EndDisabled();
@@ -1045,12 +1099,18 @@ void showFindDialog(bool* p_open, bool escWasPressed)
                 didDisable = true;
             }
             if ( ImGui::ArrowButton("##next", ImGuiDir_Right) ) {
-                currentFindEntry++;
-                findDialogActiveDocument->editor.jumpToHighlight( currentFindEntry );
+                if ( findDialogActiveDocument != lastFindExecutedDocument )
+                    findTextInEditor( buf );
+                else {
+                    currentFindEntry++;
+                    findDialogActiveDocument->editor.jumpToHighlight( currentFindEntry );
+                }
             }
             if ( didDisable )
                 ImGui::EndDisabled();
         }
+        else
+            ImGui::NewLine();
 
         ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));

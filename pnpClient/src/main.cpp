@@ -1886,7 +1886,7 @@ int main(int, char**)
 
             if ( doOpenLayout )
                 openWorkspaceLayoutOpenDialogPopup();
-            showWorkspaceLayoutOpenDialogPopup();
+            showWorkspaceLayoutOpenDialogPopup(doOpenLayout);
 
             if ( doSaveLayout )
                 requestWorkspaceInfoResave();

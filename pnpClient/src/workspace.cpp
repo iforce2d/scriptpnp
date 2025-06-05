@@ -502,8 +502,13 @@ void openWorkspaceLayoutOpenDialogPopup()
     ImGui::OpenPopup(OPENLAYOUT_DIALOG_ID);
 }
 
-void showWorkspaceLayoutOpenDialogPopup()
+void showWorkspaceLayoutOpenDialogPopup(bool openingNow)
 {
+    static char filterBuf[128];
+
+    if ( openingNow )
+        filterBuf[0] = 0;
+
     ImVec2 center = ImGui::GetMainViewport()->GetWorkCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(OPENLAYOUT_DIALOG_ID, NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -519,6 +524,12 @@ void showWorkspaceLayoutOpenDialogPopup()
             for (int n = 0; n < (int)openableLayoutNames.size(); n++)
             {
                 string thePath = openableLayoutNames[n];
+
+                if ( strlen(filterBuf) > 0 ) {
+                    if ( thePath.find(filterBuf) == std::string::npos )
+                        continue;
+                }
+
                 const bool isSelected = (selectedOpenLayoutIndex == n);
 
                 if (ImGui::Selectable(thePath.c_str(), isSelected))
@@ -532,6 +543,13 @@ void showWorkspaceLayoutOpenDialogPopup()
             }
             ImGui::EndListBox();
         }
+
+        ImGui::Text("Filter:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(-1);
+        if ( openingNow )
+            ImGui::SetKeyboardFocusHere();
+        ImGui::InputText("##filter", filterBuf, sizeof(filterBuf));
 
         if ( pathToOpen.empty() )
             ImGui::BeginDisabled();

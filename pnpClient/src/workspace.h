@@ -73,7 +73,7 @@ void openWorkspaceLayoutSaveAsDialogPopup();
 void showWorkspaceLayoutSaveAsDialogPopup(bool openingNow);
 
 void openWorkspaceLayoutOpenDialogPopup();
-void showWorkspaceLayoutOpenDialogPopup();
+void showWorkspaceLayoutOpenDialogPopup(bool openingNow);
 
 void showComboboxEntries(bool* p_open);
 
