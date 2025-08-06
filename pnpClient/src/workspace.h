@@ -17,6 +17,7 @@ struct workspaceWindowInfo_t {
 };
 
 extern bool show_status_window;
+extern bool show_full_status;
 extern bool show_demo_window;
 extern bool show_log_window;
 extern bool show_usbcamera_window;

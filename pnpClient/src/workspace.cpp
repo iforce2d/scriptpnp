@@ -40,6 +40,7 @@ struct workspaceLayoutInfo_t {
 };
 
 bool show_status_window = true;
+bool show_full_status = true;
 bool show_demo_window = false;
 bool show_log_window = true;
 bool show_usbcamera_window = false;
@@ -214,6 +215,7 @@ static int loadWorkspace_callback(void *NotUsed, int argc, char **argv, char **a
 }
 
 #define WW_STATUS           "status"
+#define WW_FULL_STATUS      "fullstatus"
 #define WW_DEMO             "demo"
 #define WW_LOG              "log"
 #define WW_USBCAMERA        "usbcamera"
@@ -235,6 +237,7 @@ void saveWorkspaceToDB_windowsOpen(string layoutTitle)
 {
     vector<string> internalsVec;
     if ( show_status_window ) internalsVec.push_back( WW_STATUS );
+    if ( show_full_status ) internalsVec.push_back( WW_FULL_STATUS );
     if ( show_demo_window ) internalsVec.push_back( WW_DEMO );
     if ( show_log_window ) internalsVec.push_back( WW_LOG );
     if ( show_usbcamera_window ) internalsVec.push_back( WW_USBCAMERA );
@@ -310,6 +313,7 @@ bool loadWorkspaceFromDB_windowsOpen(string layoutTitle)
             splitStringVec(currentLayout.internalWindows, cols[0], ',');
 
             show_status_window = stringVecContains( currentLayout.internalWindows, WW_STATUS );
+            show_full_status = stringVecContains( currentLayout.internalWindows, WW_FULL_STATUS );
             show_demo_window = stringVecContains( currentLayout.internalWindows, WW_DEMO );
             show_log_window = stringVecContains( currentLayout.internalWindows, WW_LOG );
             show_usbcamera_window = stringVecContains( currentLayout.internalWindows, WW_USBCAMERA );

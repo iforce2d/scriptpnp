@@ -1307,6 +1307,9 @@ int main(int, char**)
     bool ctrlSPressedLastTime = false;
     bool ctrlFPressedLastTime = false;
 
+    ImVec2 fullStatusSize = ImVec2(400, 600);
+    bool wasFullStatus = show_full_status;
+
     //while (!glfwWindowShouldClose(window))
     while ( ! closeWindowNow )
     {
@@ -1847,7 +1850,7 @@ int main(int, char**)
 
                 if (ImGui::BeginMenu("DB"))
                 {
-                    ImGui::MenuItem("View tables", NULL, &show_table_views);
+                    ImGui::MenuItem("DB tables", NULL, &show_table_views);
                     ImGui::MenuItem("Table settings", NULL, &show_table_settings);
                     ImGui::MenuItem("Duplicate table", NULL, &show_duplicate_table_view);
 
@@ -1899,9 +1902,14 @@ int main(int, char**)
             {
                 doLayoutLoad(STATUS_WINDOW_TITLE);
 
-                ImGui::Begin("Status", &show_status_window);
+                if ( ! show_full_status )
+                    ImGui::SetNextWindowSize(ImVec2(250, 120), ImGuiCond_Always);
+                else {
+                    if ( ! wasFullStatus && show_full_status )
+                        ImGui::SetNextWindowSize(fullStatusSize, ImGuiCond_Always);
+                }
 
-                ImGui::Checkbox("Demo Window", &show_demo_window);
+                ImGui::Begin("Status", &show_status_window);
 
                 std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
                 long long timeSinceLastPublish = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastPublishTime).count();
@@ -1916,367 +1924,381 @@ int main(int, char**)
                 ImGui::SameLine();
                 ImGui::Text(" (%lld ms)", timeSinceLastPublish);
                 showStatusIndicator("SPI connection", lastStatusReport.spiOk );
-                ImGui::Text("Mode: %s", getModeName(lastStatusReport.mode));
-                ImGui::Text("Last home result: %s", getHomingResultName(lastHomingResult));
-                ImGui::Text("Last traj result: %s", getTrajectoryResultName(lastTrajResult));
-                if ( lastProbingResult == PR_SUCCESS ) {
-                    ImGui::Text("Last probe result: %s, height = %f", getProbingResultName(lastProbingResult), lastProbedHeight);
-                }
-                else
-                    ImGui::Text("Last probe result: %s", getProbingResultName(lastProbingResult));
 
-                showStatusIndicator_16bits("Homed:", lastStatusReport.homedAxes, 4);
-                showStatusIndicator_16bits("Outputs:", lastStatusReport.outputs, 16);
-                showStatusIndicator_16bits("Inputs:", lastStatusReport.inputs, 16);
+                ImGui::Text("Average framerate: %.1f fps", io.Framerate);
 
-                ImGui::Text("Actual pos: %f, %f, %f", lastActualPos.x, lastActualPos.y, lastActualPos.z);
-                ImGui::Text("Actual vel: %f, %f, %f", lastActualVel.x, lastActualVel.y, lastActualVel.z);
-                ImGui::Text("Actual rot: %f", lastActualRots[0]);
+                wasFullStatus = show_full_status;
+                ImGui::Checkbox("Show full status", &show_full_status);
+                if ( wasFullStatus && ! show_full_status )
+                    fullStatusSize = ImGui::GetWindowSize();
 
-                //ImGui::Text("Probed height: %f", lastStatusReport.probedHeight);
+                if ( show_full_status ) {
 
-                ImGui::Text("Rotary enc: %d", lastStatusReport.rotary);
-                ImGui::SameLine();
-                ImGui::Text("ADCs: %.3f, %.3f", lastStatusReport.adc[0] / 4096.0f, lastStatusReport.adc[1] / 4096.0f);
+                    ImGui::Checkbox("Demo Window", &show_demo_window);
 
-                ImGui::Text("Vacuum: %0.2f kpa", vac);
-                ImGui::SameLine();
-                ImGui::Text("Load cell: %d", lastStatusReport.loadcell);
-                ImGui::SameLine();
-                ImGui::Text("Load cell norm: %f", lastStatusReport.weight);
+                    ImGui::Text("Mode: %s", getModeName(lastStatusReport.mode));
+                    ImGui::Text("Last home result: %s", getHomingResultName(lastHomingResult));
+                    ImGui::Text("Last traj result: %s", getTrajectoryResultName(lastTrajResult));
+                    if ( lastProbingResult == PR_SUCCESS ) {
+                        ImGui::Text("Last probe result: %s, height = %f", getProbingResultName(lastProbingResult), lastProbedHeight);
+                    }
+                    else
+                        ImGui::Text("Last probe result: %s", getProbingResultName(lastProbingResult));
 
-                ImGui::Text("Move limits: vel %.0f, acc %.0f, jerk %.0f", lastActualMoveLimits.vel, lastActualMoveLimits.acc, lastActualMoveLimits.jerk);
-                ImGui::Text("Rotate limits: vel %.0f, acc %.0f, jerk %.0f", lastActualRotateLimits.vel, lastActualRotateLimits.acc, lastActualRotateLimits.jerk);
-                moveSpeedScaleChanged = ImGui::SliderFloat("Speed scale", &moveSpeedScale, 0.1, 1);
-                jogSpeedScaleChanged = ImGui::SliderFloat("Jog speed scale", &jogSpeedScale, 0.1, 1);
+                    showStatusIndicator_16bits("Homed:", lastStatusReport.homedAxes, 4);
+                    showStatusIndicator_16bits("Outputs:", lastStatusReport.outputs, 16);
+                    showStatusIndicator_16bits("Inputs:", lastStatusReport.inputs, 16);
 
-                if (ImGui::Button("EStop")) {
-                    commandRequest_t req = createCommandRequest(MT_SET_ESTOP);
-                    req.setEstop.val = 0;
-                    sendCommandRequest(&req);
-                }
+                    ImGui::Text("Actual pos: %f, %f, %f", lastActualPos.x, lastActualPos.y, lastActualPos.z);
+                    ImGui::Text("Actual vel: %f, %f, %f", lastActualVel.x, lastActualVel.y, lastActualVel.z);
+                    ImGui::Text("Actual rot: %f", lastActualRots[0]);
 
-                /*ImGui::SameLine();
-                if (ImGui::Button("Zero")) {
-                    if ( ! jogButtonDown() ) {
-                        commandRequest_t req = createCommandRequest(MT_SET_MOVETO);
-                        req.setMoveto.speed = movetoSpeed;
-                        req.setMoveto.dst.x = targetPos.x;
-                        req.setMoveto.dst.y = targetPos.y;
-                        req.setMoveto.dst.z = targetPos.z;
+                    //ImGui::Text("Probed height: %f", lastStatusReport.probedHeight);
+
+                    ImGui::Text("Rotary enc: %d", lastStatusReport.rotary);
+                    ImGui::SameLine();
+                    ImGui::Text("ADCs: %.3f, %.3f", lastStatusReport.adc[0] / 4096.0f, lastStatusReport.adc[1] / 4096.0f);
+
+                    ImGui::Text("Vacuum: %0.2f kpa", vac);
+                    ImGui::SameLine();
+                    ImGui::Text("Load cell: %d", lastStatusReport.loadcell);
+                    ImGui::SameLine();
+                    ImGui::Text("Load cell norm: %f", lastStatusReport.weight);
+
+                    ImGui::Text("Move limits: vel %.0f, acc %.0f, jerk %.0f", lastActualMoveLimits.vel, lastActualMoveLimits.acc, lastActualMoveLimits.jerk);
+                    ImGui::Text("Rotate limits: vel %.0f, acc %.0f, jerk %.0f", lastActualRotateLimits.vel, lastActualRotateLimits.acc, lastActualRotateLimits.jerk);
+                    moveSpeedScaleChanged = ImGui::SliderFloat("Speed scale", &moveSpeedScale, 0.1, 1);
+                    jogSpeedScaleChanged = ImGui::SliderFloat("Jog speed scale", &jogSpeedScale, 0.1, 1);
+
+                    if (ImGui::Button("EStop")) {
+                        commandRequest_t req = createCommandRequest(MT_SET_ESTOP);
+                        req.setEstop.val = 0;
                         sendCommandRequest(&req);
-                        lastTrajResult = TR_NONE;
                     }
-                }*/
 
-                ImGui::SameLine();
-                if ( ImGui::Button("RGB on") ) {
+                    /*ImGui::SameLine();
+                    if (ImGui::Button("Zero")) {
+                        if ( ! jogButtonDown() ) {
+                            commandRequest_t req = createCommandRequest(MT_SET_MOVETO);
+                            req.setMoveto.speed = movetoSpeed;
+                            req.setMoveto.dst.x = targetPos.x;
+                            req.setMoveto.dst.y = targetPos.y;
+                            req.setMoveto.dst.z = targetPos.z;
+                            sendCommandRequest(&req);
+                            lastTrajResult = TR_NONE;
+                        }
+                    }*/
 
-                    rgbOuts[0] |= 7;
-                    rgbOuts[1] |= (1 << 3);
-                    rgbOuts[2] |= (1 << 3);
+                    ImGui::SameLine();
+                    if ( ImGui::Button("RGB on") ) {
 
-                    commandRequest_t req = createCommandRequest(MT_SET_RGB_OUTPUT);
-                    memcpy(req.setRGBOutput.rgb, rgbOuts, 6);
-                    sendCommandRequest(&req);
-                }
+                        rgbOuts[0] |= 7;
+                        rgbOuts[1] |= (1 << 3);
+                        rgbOuts[2] |= (1 << 3);
 
-                ImGui::SameLine();
-                if ( ImGui::Button("RGB off") ) {
-
-                    rgbOuts[1] = (1 << 1);
-                    rgbOuts[2] = (1 << 1);
-
-                    commandRequest_t req = createCommandRequest(MT_SET_RGB_OUTPUT);
-                    memcpy(req.setRGBOutput.rgb, rgbOuts, 6);
-                    sendCommandRequest(&req);
-                }
-
-                ImGui::SameLine();
-                if (ImGui::Button("TMC")) {
-                    commandRequest_t req = createCommandRequest(MT_SET_TMC_PARAMS);
-                    for (int i = 0; i < 4; i++) {
-                        req.setTMCParams.microsteps[i] = 16; // 4x microstepping
-                        req.setTMCParams.rmsCurrent[i] = 200;
+                        commandRequest_t req = createCommandRequest(MT_SET_RGB_OUTPUT);
+                        memcpy(req.setRGBOutput.rgb, rgbOuts, 6);
+                        sendCommandRequest(&req);
                     }
-                    sendCommandRequest(&req);
-                }
 
-                ImGui::SameLine();
-                if (ImGui::Button("Test notifications")) {
-                    notify("Test success", NT_SUCCESS, 5000 );
-                    notify("Test warning", NT_WARNING, 5000 );
-                    notify("Test error", NT_ERROR, 5000 );
-                    notify("Test info", NT_INFO, 5000 );
-                    //ImGui::InsertNotification({ ImGuiToastType_Success, 5000, "Hello World! This is a success! %s", "We can also format here:)" });
-                    if ( ! ImGui::notifications.empty() )
-                        ImGui::RemoveNotification(0);
-                }
+                    ImGui::SameLine();
+                    if ( ImGui::Button("RGB off") ) {
 
-                if ( ImGui::Button("D0 on") ) {
+                        rgbOuts[1] = (1 << 1);
+                        rgbOuts[2] = (1 << 1);
 
-                    //digOuts |= 0x1;
+                        commandRequest_t req = createCommandRequest(MT_SET_RGB_OUTPUT);
+                        memcpy(req.setRGBOutput.rgb, rgbOuts, 6);
+                        sendCommandRequest(&req);
+                    }
 
-                    commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
-                    req.setDigitalOutputs.bits = 0xff;
-                    req.setDigitalOutputs.changed = 0x1;
-                    sendCommandRequest(&req);
-                }
+                    ImGui::SameLine();
+                    if (ImGui::Button("TMC")) {
+                        commandRequest_t req = createCommandRequest(MT_SET_TMC_PARAMS);
+                        for (int i = 0; i < 4; i++) {
+                            req.setTMCParams.microsteps[i] = 16; // 4x microstepping
+                            req.setTMCParams.rmsCurrent[i] = 200;
+                        }
+                        sendCommandRequest(&req);
+                    }
 
-                ImGui::SameLine();
-                if ( ImGui::Button("D0 off") ) {
+                    ImGui::SameLine();
+                    if (ImGui::Button("Test notifications")) {
+                        notify("Test success", NT_SUCCESS, 5000 );
+                        notify("Test warning", NT_WARNING, 5000 );
+                        notify("Test error", NT_ERROR, 5000 );
+                        notify("Test info", NT_INFO, 5000 );
+                        //ImGui::InsertNotification({ ImGuiToastType_Success, 5000, "Hello World! This is a success! %s", "We can also format here:)" });
+                        if ( ! ImGui::notifications.empty() )
+                            ImGui::RemoveNotification(0);
+                    }
 
-                    //digOuts &= ~0x1;
+                    if ( ImGui::Button("D0 on") ) {
 
-                    commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
-                    req.setDigitalOutputs.bits = 0;
-                    req.setDigitalOutputs.changed = 0x1;
-                    sendCommandRequest(&req);
-                }
+                        //digOuts |= 0x1;
 
-                ImGui::SameLine();
-                if ( ImGui::Button("D1 on") ) {
+                        commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
+                        req.setDigitalOutputs.bits = 0xff;
+                        req.setDigitalOutputs.changed = 0x1;
+                        sendCommandRequest(&req);
+                    }
 
-                    //digOuts |= 0x2;
+                    ImGui::SameLine();
+                    if ( ImGui::Button("D0 off") ) {
 
-                    commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
-                    req.setDigitalOutputs.bits = 0xff;
-                    req.setDigitalOutputs.changed = 0x2;
-                    sendCommandRequest(&req);
-                }
+                        //digOuts &= ~0x1;
 
-                ImGui::SameLine();
-                if ( ImGui::Button("D1 off") ) {
+                        commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
+                        req.setDigitalOutputs.bits = 0;
+                        req.setDigitalOutputs.changed = 0x1;
+                        sendCommandRequest(&req);
+                    }
 
-                    //digOuts &= ~0x2;
+                    ImGui::SameLine();
+                    if ( ImGui::Button("D1 on") ) {
 
-                    commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
-                    req.setDigitalOutputs.bits = 0;
-                    req.setDigitalOutputs.changed = 0x2;
-                    sendCommandRequest(&req);
-                }
+                        //digOuts |= 0x2;
 
-                ImGui::SameLine();
-                if ( ImGui::Button("D2 on") ) {
+                        commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
+                        req.setDigitalOutputs.bits = 0xff;
+                        req.setDigitalOutputs.changed = 0x2;
+                        sendCommandRequest(&req);
+                    }
 
-                    //digOuts |= 0x4;
+                    ImGui::SameLine();
+                    if ( ImGui::Button("D1 off") ) {
 
-                    commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
-                    req.setDigitalOutputs.bits = 0xff;
-                    req.setDigitalOutputs.changed = 0x4;
-                    sendCommandRequest(&req);
-                }
+                        //digOuts &= ~0x2;
 
-                ImGui::SameLine();
-                if ( ImGui::Button("D2 off") ) {
+                        commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
+                        req.setDigitalOutputs.bits = 0;
+                        req.setDigitalOutputs.changed = 0x2;
+                        sendCommandRequest(&req);
+                    }
 
-                    //digOuts &= ~0x4;
+                    ImGui::SameLine();
+                    if ( ImGui::Button("D2 on") ) {
 
-                    commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
-                    req.setDigitalOutputs.bits = 0;
-                    req.setDigitalOutputs.changed = 0x4;
-                    sendCommandRequest(&req);
-                }
+                        //digOuts |= 0x4;
 
-                bool didDisable = false;
-                if ( currentlyRunningScriptThread() || currentlyPausingScript() ) {
-                    ImGui::BeginDisabled();
-                    didDisable = true;
-                }
+                        commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
+                        req.setDigitalOutputs.bits = 0xff;
+                        req.setDigitalOutputs.changed = 0x4;
+                        sendCommandRequest(&req);
+                    }
 
-                if ( ImGui::Button("Home X") ) {
-                    commandRequest_t req = createCommandRequest(MT_HOME_AXES);
-                    memset(&req.homeAxes, 0, sizeof(req.homeAxes));
-                    req.homeAxes.ordering[0] = 1;
-                    sendCommandRequest(&req);
-                    lastHomingResult = HR_NONE;
-                }
+                    ImGui::SameLine();
+                    if ( ImGui::Button("D2 off") ) {
 
-                ImGui::SameLine();
-                if ( ImGui::Button("Home Y") ) {
-                    commandRequest_t req = createCommandRequest(MT_HOME_AXES);
-                    memset(&req.homeAxes, 0, sizeof(req.homeAxes));
-                    req.homeAxes.ordering[0] = 2;
-                    sendCommandRequest(&req);
-                    lastHomingResult = HR_NONE;
-                }
+                        //digOuts &= ~0x4;
 
-                ImGui::SameLine();
-                if ( ImGui::Button("Home Z") ) {
-                    commandRequest_t req = createCommandRequest(MT_HOME_AXES);
-                    memset(&req.homeAxes, 0, sizeof(req.homeAxes));
-                    req.homeAxes.ordering[0] = 3;
-                    sendCommandRequest(&req);
-                    lastHomingResult = HR_NONE;
-                }
+                        commandRequest_t req = createCommandRequest(MT_SET_DIGITAL_OUTPUTS);
+                        req.setDigitalOutputs.bits = 0;
+                        req.setDigitalOutputs.changed = 0x4;
+                        sendCommandRequest(&req);
+                    }
 
-                ImGui::SameLine();
-                if ( ImGui::Button("Home all") ) {
-                    commandRequest_t req = createCommandRequest(MT_HOME_ALL);
-                    memset(&req.homeAxes, 0, sizeof(req.homeAxes));
-                    sendCommandRequest(&req);
-                    lastHomingResult = HR_NONE;
-                }
+                    bool didDisable = false;
+                    if ( currentlyRunningScriptThread() || currentlyPausingScript() ) {
+                        ImGui::BeginDisabled();
+                        didDisable = true;
+                    }
 
-                if ( didDisable )
-                    ImGui::EndDisabled();
+                    if ( ImGui::Button("Home X") ) {
+                        commandRequest_t req = createCommandRequest(MT_HOME_AXES);
+                        memset(&req.homeAxes, 0, sizeof(req.homeAxes));
+                        req.homeAxes.ordering[0] = 1;
+                        sendCommandRequest(&req);
+                        lastHomingResult = HR_NONE;
+                    }
+
+                    ImGui::SameLine();
+                    if ( ImGui::Button("Home Y") ) {
+                        commandRequest_t req = createCommandRequest(MT_HOME_AXES);
+                        memset(&req.homeAxes, 0, sizeof(req.homeAxes));
+                        req.homeAxes.ordering[0] = 2;
+                        sendCommandRequest(&req);
+                        lastHomingResult = HR_NONE;
+                    }
+
+                    ImGui::SameLine();
+                    if ( ImGui::Button("Home Z") ) {
+                        commandRequest_t req = createCommandRequest(MT_HOME_AXES);
+                        memset(&req.homeAxes, 0, sizeof(req.homeAxes));
+                        req.homeAxes.ordering[0] = 3;
+                        sendCommandRequest(&req);
+                        lastHomingResult = HR_NONE;
+                    }
+
+                    ImGui::SameLine();
+                    if ( ImGui::Button("Home all") ) {
+                        commandRequest_t req = createCommandRequest(MT_HOME_ALL);
+                        memset(&req.homeAxes, 0, sizeof(req.homeAxes));
+                        sendCommandRequest(&req);
+                        lastHomingResult = HR_NONE;
+                    }
+
+                    if ( didDisable )
+                        ImGui::EndDisabled();
 
 
-                didDisable = false;
-                if ( ! currentlyRunningScriptThread() || currentlyPausingScript() ) {
-                    ImGui::BeginDisabled();
-                    didDisable = true;
-                }
-                if ( ImGui::Button("Pause script") ) {
-                    pauseScript();
-                }
-                if ( didDisable )
-                    ImGui::EndDisabled();
+                    didDisable = false;
+                    if ( ! currentlyRunningScriptThread() || currentlyPausingScript() ) {
+                        ImGui::BeginDisabled();
+                        didDisable = true;
+                    }
+                    if ( ImGui::Button("Pause script") ) {
+                        pauseScript();
+                    }
+                    if ( didDisable )
+                        ImGui::EndDisabled();
 
 
-                ImGui::SameLine();
+                    ImGui::SameLine();
 
-                didDisable = false;
-                if ( ! currentlyPausingScript() ) {
-                    ImGui::BeginDisabled();
-                    didDisable = true;
-                }
-                if ( ImGui::Button("Resume script") ) {
-                    resumeScript();
-                }
-                if ( didDisable )
-                    ImGui::EndDisabled();
+                    didDisable = false;
+                    if ( ! currentlyPausingScript() ) {
+                        ImGui::BeginDisabled();
+                        didDisable = true;
+                    }
+                    if ( ImGui::Button("Resume script") ) {
+                        resumeScript();
+                    }
+                    if ( didDisable )
+                        ImGui::EndDisabled();
 
-                ImGui::SameLine();
+                    ImGui::SameLine();
 
-                didDisable = false;
-                if ( ! currentlyRunningScriptThread() ) {
-                    ImGui::BeginDisabled();
-                    didDisable = true;
-                }
-                if ( ImGui::Button("Abort script") ) {
-                    abortScript();
-                }
-                if ( didDisable )
-                    ImGui::EndDisabled();
-
-                lastPWMOut = pwmOut;
-                ImGui::SliderFloat("PWM out", &pwmOut, 0, 1);
-                if ( pwmOut != lastPWMOut ) {
-
-                    commandRequest_t req = createCommandRequest(MT_SET_PWM_OUTPUT);
-                    req.setPWMOutput.val = 65535 * pwmOut;
-                    sendCommandRequest(&req);
+                    didDisable = false;
+                    if ( ! currentlyRunningScriptThread() ) {
+                        ImGui::BeginDisabled();
+                        didDisable = true;
+                    }
+                    if ( ImGui::Button("Abort script") ) {
+                        abortScript();
+                    }
+                    if ( didDisable )
+                        ImGui::EndDisabled();
 
                     lastPWMOut = pwmOut;
-                }
+                    ImGui::SliderFloat("PWM out", &pwmOut, 0, 1);
+                    if ( pwmOut != lastPWMOut ) {
 
-                const ImGuiKey jogKeys[] = {
-                    ImGuiKey_LeftArrow, ImGuiKey_RightArrow,
-                    ImGuiKey_DownArrow, ImGuiKey_UpArrow,
-                    ImGuiKey_PageDown, ImGuiKey_PageUp
-                };
+                        commandRequest_t req = createCommandRequest(MT_SET_PWM_OUTPUT);
+                        req.setPWMOutput.val = 65535 * pwmOut;
+                        sendCommandRequest(&req);
 
-                bool shouldSendJogCommand = false;
-                if ( ! io.WantCaptureKeyboard ) {
-                    for (int i = 0; i < 3; i++) {
-                        bool jogDec = ImGui::IsKeyDown( jogKeys[2*i] );
-                        bool jogInc = ImGui::IsKeyDown( jogKeys[2*i+1] );
-
-                        int jog = 0;
-                        if ( jogDec && ! jogInc )
-                            jog = -1;
-                        else if ( ! jogDec && jogInc )
-                            jog = 1;
-
-                        if ( jog != jogDirs[i] ) {
-                            shouldSendJogCommand = true;
-                        }
-
-                        jogDirs[i] = jog;
+                        lastPWMOut = pwmOut;
                     }
-                }
 
-                if ( ! shouldSendJogCommand ) {
-                    if ( jogButtonDown() ) {
-                        long long timeSinceLastJogSend = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastJogSendTime).count();
-                        if ( timeSinceLastJogSend > 100 ) {
-                            shouldSendJogCommand = true;
-                            lastJogSendTime = now;
+                    const ImGuiKey jogKeys[] = {
+                        ImGuiKey_LeftArrow, ImGuiKey_RightArrow,
+                        ImGuiKey_DownArrow, ImGuiKey_UpArrow,
+                        ImGuiKey_PageDown, ImGuiKey_PageUp
+                    };
+
+                    bool shouldSendJogCommand = false;
+                    if ( ! io.WantCaptureKeyboard ) {
+                        for (int i = 0; i < 3; i++) {
+                            bool jogDec = ImGui::IsKeyDown( jogKeys[2*i] );
+                            bool jogInc = ImGui::IsKeyDown( jogKeys[2*i+1] );
+
+                            int jog = 0;
+                            if ( jogDec && ! jogInc )
+                                jog = -1;
+                            else if ( ! jogDec && jogInc )
+                                jog = 1;
+
+                            if ( jog != jogDirs[i] ) {
+                                shouldSendJogCommand = true;
+                            }
+
+                            jogDirs[i] = jog;
                         }
                     }
-                }
 
-                if ( shouldSendJogCommand ) {
-                    commandRequest_t jogReq = createCommandRequest(MT_SET_JOG_STATUS);
-                    memcpy(jogReq.setJogStatus.jogDirs, jogDirs, sizeof(jogDirs));
-                    sendCommandRequest(&jogReq);
-                }
+                    if ( ! shouldSendJogCommand ) {
+                        if ( jogButtonDown() ) {
+                            long long timeSinceLastJogSend = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastJogSendTime).count();
+                            if ( timeSinceLastJogSend > 100 ) {
+                                shouldSendJogCommand = true;
+                                lastJogSendTime = now;
+                            }
+                        }
+                    }
+
+                    if ( shouldSendJogCommand ) {
+                        commandRequest_t jogReq = createCommandRequest(MT_SET_JOG_STATUS);
+                        memcpy(jogReq.setJogStatus.jogDirs, jogDirs, sizeof(jogDirs));
+                        sendCommandRequest(&jogReq);
+                    }
 
 
-                //            ImGui::Text("WASD, left shift, left ctrl to move camera.\n"
-                //                        "Hold right mouse button and drag to rotate camera.\n"
-                //                        "T to restart animation");
+                    //            ImGui::Text("WASD, left shift, left ctrl to move camera.\n"
+                    //                        "Hold right mouse button and drag to rotate camera.\n"
+                    //                        "T to restart animation");
 
-                //char n[128];
+                    //char n[128];
 
-                if (ImGui::CollapsingHeader("Display options"))
-                {
-                    // if (ImGui::BeginTable("split", 2))
-                    // {
-                    //     ImGui::TableNextColumn();
-                        ImGui::Checkbox("Show bounding box", &showBoundingBox);
-                        //ImGui::TableNextColumn(); ImGui::Checkbox("Show control points", &showControlPoints);
-                    //     ImGui::EndTable();
-                    // }
+                    if (ImGui::CollapsingHeader("Display options"))
+                    {
+                        // if (ImGui::BeginTable("split", 2))
+                        // {
+                        //     ImGui::TableNextColumn();
+                            ImGui::Checkbox("Show bounding box", &showBoundingBox);
+                            //ImGui::TableNextColumn(); ImGui::Checkbox("Show control points", &showControlPoints);
+                        //     ImGui::EndTable();
+                        // }
 
-                    ImGui::Checkbox("Show preview event labels", &showPreviewEventsLabels);
+                        ImGui::Checkbox("Show preview event labels", &showPreviewEventsLabels);
 
-                    int ps = previewStyle;
-                    ImGui::RadioButton("Points", &ps, PS_POINTS); ImGui::SameLine();
-                    ImGui::RadioButton("Lines", &ps, PS_LINES);
-                    previewStyle = (previewStyle_e)ps;
+                        int ps = previewStyle;
+                        ImGui::RadioButton("Points", &ps, PS_POINTS); ImGui::SameLine();
+                        ImGui::RadioButton("Lines", &ps, PS_LINES);
+                        previewStyle = (previewStyle_e)ps;
 
-                    ImGui::SliderFloat("Max vel", &traverseMaxVel, 10, 1000);
+                        ImGui::SliderFloat("Max vel", &traverseMaxVel, 10, 1000);
 
-                    showVec3Editor("Model offset", &modelOffset);
-                    //                showVec3Editor("Gantry offset", &gantryOffset);
-                    //                showVec3Editor("X carriage offset", &xcarriageOffset);
-                    //                showVec3Editor("Z carriage offset", &zcarriageOffset);
-                    //                showVec3Editor("Tweak", &tweak);
+                        showVec3Editor("Model offset", &modelOffset);
+                        //                showVec3Editor("Gantry offset", &gantryOffset);
+                        //                showVec3Editor("X carriage offset", &xcarriageOffset);
+                        //                showVec3Editor("Z carriage offset", &zcarriageOffset);
+                        //                showVec3Editor("Tweak", &tweak);
 
-                    ImGui::Checkbox("Enable light 1", &enableLight1);
-                    if ( enableLight1 )
-                        showVec3Slider("Light 1", &lightPos1);
+                        ImGui::Checkbox("Enable light 1", &enableLight1);
+                        if ( enableLight1 )
+                            showVec3Slider("Light 1", &lightPos1);
 
-                    ImGui::Checkbox("Enable light 2", &enableLight2);
-                    if ( enableLight2 )
-                        showVec3Slider("Light 2", &lightPos2);
+                        ImGui::Checkbox("Enable light 2", &enableLight2);
+                        if ( enableLight2 )
+                            showVec3Slider("Light 2", &lightPos2);
 
-                    ImGui::Checkbox("Enable light 3", &enableLight3);
-                    if ( enableLight3 )
-                        showVec3Slider("Light 3", &lightPos3);
-                }
+                        ImGui::Checkbox("Enable light 3", &enableLight3);
+                        if ( enableLight3 )
+                            showVec3Slider("Light 3", &lightPos3);
+                    }
 
-                //            if (ImGui::CollapsingHeader("Animation"))
-                //            {
-                //                ImGui::SliderFloat("Speed scale", &animSpeedScale, 0, 5);
-                //                showVec3Editor("animLoc", &animLoc);
-                //            }
+                    //            if (ImGui::CollapsingHeader("Animation"))
+                    //            {
+                    //                ImGui::SliderFloat("Speed scale", &animSpeedScale, 0, 5);
+                    //                showVec3Editor("animLoc", &animLoc);
+                    //            }
 
-                if ( false && ImGui::CollapsingHeader("Planner settings"))
-                {
-                    ImGui::SeparatorText("Position constraint");
-                    showVec3Editor("Pos", &machineLimits.posLimitUpper);
+                    if ( false && ImGui::CollapsingHeader("Planner settings"))
+                    {
+                        ImGui::SeparatorText("Position constraint");
+                        showVec3Editor("Pos", &machineLimits.posLimitUpper);
 
-                    ImGui::SeparatorText("Velocity constraint");
-                    showVec3Editor("Vel", &machineLimits.velLimit);
+                        ImGui::SeparatorText("Velocity constraint");
+                        showVec3Editor("Vel", &machineLimits.velLimit);
 
-                    ImGui::SeparatorText("Acceleration constraint");
-                    showVec3Editor("Acc", &machineLimits.accLimit);
+                        ImGui::SeparatorText("Acceleration constraint");
+                        showVec3Editor("Acc", &machineLimits.accLimit);
 
-                    ImGui::SeparatorText("Jerk constraint");
-                    showVec3Editor("Jerk", &machineLimits.jerkLimit);
+                        ImGui::SeparatorText("Jerk constraint");
+                        showVec3Editor("Jerk", &machineLimits.jerkLimit);
+                    }
+
                 }
 
                 /*if ( false && ImGui::CollapsingHeader("Control points"))
@@ -2395,7 +2417,7 @@ int main(int, char**)
                 //     ImGui::Text("Average framerate: %.1f fps", io.Framerate);
                 // }
 
-                ImGui::Text("Average framerate: %.1f fps", io.Framerate);
+                //ImGui::Text("Average framerate: %.1f fps", io.Framerate);
 
                 //ImGui::Checkbox("Pause graph", &pausePlot);
                 //showPlots();
