@@ -4,16 +4,15 @@ Motion controller software using script to organize workflow. Requires a Raspber
 
 Introduction video: https://youtu.be/k-ZdHFlI904
 
-The system consists of a server (with no user interface) and a client with a graphical user interface. The server runs on a Raspberry Pi and connects via SPI to the weenyPRU realtime unit. The client is a graphical user interface (Linux or MacOS) which connects to the server over network. The client requires a decent OpenGL implementation to be usable, eg. hardware accelerated video. Pi3 and Pi4 are not suitable for the client (too low framerate), but a Pi5 can be used to run both the server and client on a single computer.
+The system consists of a server (with no user interface) and a client with a graphical user interface. The server runs on a Raspberry Pi and connects via SPI to the weenyPRU realtime unit. The client is a graphical user interface (Linux or MacOS) which connects to the server over network. The client requires a decent OpenGL implementation to be usable, eg. hardware accelerated video. Pi3 and Pi4 are not suitable for the client (too low framerate), but a Pi5 can be used to run both the server and client on a single computer. For the client, only Linux (Fedora40 and Ubuntu24.04) have been well tested.
 
-The main intended use case is for 'pick and place' assembly of surface mount components on a PCB, but there is no specific built-in logic to handle this. As such, your own script (written in AngelScript) will be required to tie various procedures together. For example scripts have access to and control of:
+The main intended use case is for 'pick and place' assembly of surface mount components on a PCB, but there is no specific built-in logic to handle this. As such, your own script (written in AngelScript) will be required to tie various procedures together. For example scripts have access to / control of:
 
-- head movement and nozzle rotation (4 stepper axes)
 - all machine state (position, mode, motion parameters etc)
+- head movement and nozzle rotation (4 stepper axes)
 - multiple UVC webcams (camera settings and frame-buffer content)
 - SQLite database
-- digital input pins
-- digital output pins
+- digital input and output pins
 - two analog inputs
 - one analog (PWM) output
 - one vacuum sensor
@@ -50,8 +49,27 @@ Database related features include:
 
 ## Real-time Linux on Raspberry Pi
 
-In order to be useful as a motion controller, the Raspberry Pi must be running a real-time version of Linux. The easiest way to get this is via a LinuxCNC image. You can also also build your own real-time kernel for the standard RaspiOS as [explained here for Pi5](realtime/rpi5rt.txt) (not as hard as it sounds).
+In order to be useful as a motion controller, the Raspberry Pi must be running a real-time version of Linux. The easiest way to get this is via a [LinuxCNC image](https://forum.linuxcnc.org/9-installing-linuxcnc/55192-linuxcnc-the-raspberry-pi-4-5-official-images-only), although this has not been tested. You can also also build your own real-time kernel for the standard RaspiOS as [explained here for Pi5](realtime/rpi5rt.txt). This is not as difficult as it sounds, and is likely to be more reliable.
 
+
+
+## Initial setup
+
+See info on building the server and client in the 'pnpServer' and 'pnpClient' folders.
+
+Most of the fundamental machine settings are in the [Server] panel (found under 'Setup' in the main menu). Settings in this panel are stored on the server, so they will be the same regardless of connecting from different clients.
+
+## Cameras
+
+Webcams must be UVC compliant, which is typical of most cameras. To open camera views, first use the [USB cameras] panel (found under 'Setup' in the main menu) to enumerate and list them.
+
+## Script editing
+
+You can open [script editor] views (found under 'Editors' in the main menu) to edit and execute scripts. Opening multiple editor views is possible, with each view showing the same content - this may be useful for looking at two files side by side.
+
+## Database tables
+
+To view database tables, first open the [DB tables] panel (found under 'DB' in the main menu). This panel shows a list of tables which can be shown by clicking their checkbox. Options to modify the list, and to duplicate or delete tables can also be found under 'DB' in the main menu.
 
 
 <br/><br/><br/><br/><br/><br/><br/>This page is a work in progress, stuff below is my notes, plz ignore<br/><br/><br/>
@@ -59,7 +77,7 @@ Architecture
     server Raspberry Pi 3/4 (Pi5 not yet)
         RT OS
         weenyPRU
-    client Fedora, Ubuntu, MacOS? (high spec graphic)
+    client Fedora, Ubuntu, MacOS
     message/communication loops
         1000Hz SPI
         200Hz publish
